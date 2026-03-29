@@ -1,0 +1,124 @@
+import React, { Suspense } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AppLayout } from '@/shared/components/layout/AppLayout'
+
+const ProdutoListPage = React.lazy(
+  () => import('@/modules/produto/pages/ProdutoListPage')
+)
+const ProdutoFormPage = React.lazy(
+  () => import('@/modules/produto/pages/ProdutoFormPage')
+)
+const ProdutoDetalhePage = React.lazy(
+  () => import('@/modules/produto/pages/ProdutoDetalhePage')
+)
+const EstoqueListPage = React.lazy(
+  () => import('@/modules/estoque/pages/EstoqueListPage')
+)
+const EstoqueDetalhe = React.lazy(
+  () => import('@/modules/estoque/pages/EstoqueDetalhe')
+)
+const VendaBalcaoPage = React.lazy(
+  () => import('@/modules/venda/pages/VendaBalcaoPage')
+)
+const VendaHistoricoPage = React.lazy(
+  () => import('@/modules/venda/pages/VendaHistoricoPage')
+)
+const ClienteListPage = React.lazy(
+  () => import('@/modules/cliente/pages/ClienteListPage')
+)
+const ClienteFormPage = React.lazy(
+  () => import('@/modules/cliente/pages/ClienteFormPage')
+)
+const ClienteDetalhePage = React.lazy(
+  () => import('@/modules/cliente/pages/ClienteDetalhePage')
+)
+const ComprasPage = React.lazy(
+  () => import('@/modules/compra/pages/ComprasPage')
+)
+const MovimentacoesPage = React.lazy(
+  () => import('@/modules/estoque/pages/MovimentacoesPage')
+)
+const OrcamentosPage = React.lazy(
+  () => import('@/modules/venda/pages/OrcamentosPage')
+)
+const TitulosPage = React.lazy(
+  () => import('@/modules/financeiro/pages/TitulosPage')
+)
+const CaixaPage = React.lazy(
+  () => import('@/modules/financeiro/pages/CaixaPage')
+)
+const FluxoCaixaPage = React.lazy(
+  () => import('@/modules/financeiro/pages/FluxoCaixaPage')
+)
+const DashboardPage = React.lazy(
+  () => import('@/modules/relatorio/pages/DashboardPage')
+)
+const RelatoriosExportPage = React.lazy(
+  () => import('@/modules/relatorio/pages/RelatoriosExportPage')
+)
+const NfePage = React.lazy(
+  () => import('@/modules/fiscal/pages/NfePage')
+)
+const FornecedoresPage = React.lazy(
+  () => import('@/modules/fornecedor/pages/FornecedoresPage')
+)
+const EntregasPage = React.lazy(
+  () => import('@/modules/entrega/pages/EntregasPage')
+)
+const PrecosPage = React.lazy(
+  () => import('@/modules/produto/pages/PrecosPage')
+)
+
+function PageFallback() {
+  return (
+    <div className="flex h-64 items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppLayout>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/relatorios/dashboard" replace />} />
+            <Route path="/relatorios/dashboard" element={<DashboardPage />} />
+            <Route path="/relatorios/exportar" element={<RelatoriosExportPage />} />
+            <Route path="/produtos" element={<ProdutoListPage />} />
+            <Route path="/produtos/precos" element={<PrecosPage />} />
+            <Route path="/produtos/novo" element={<ProdutoFormPage />} />
+            <Route path="/produtos/:id" element={<ProdutoDetalhePage />} />
+            <Route path="/estoque" element={<EstoqueListPage />} />
+            <Route path="/estoque/:produtoId" element={<EstoqueDetalhe />} />
+            <Route path="/vendas/balcao" element={<VendaBalcaoPage />} />
+            <Route path="/vendas/historico" element={<VendaHistoricoPage />} />
+            <Route path="/clientes" element={<ClienteListPage />} />
+            <Route path="/clientes/novo" element={<ClienteFormPage />} />
+            <Route path="/clientes/:id" element={<ClienteDetalhePage />} />
+            {/* Rotas placeholder para os demais módulos */}
+            <Route path="/vendas/orcamentos" element={<OrcamentosPage />} />
+            <Route path="/estoque/movimentacoes" element={<MovimentacoesPage />} />
+            <Route path="/compras/pedidos" element={<ComprasPage />} />
+            <Route path="/fiscal/nfe" element={<NfePage />} />
+            <Route path="/fornecedores" element={<FornecedoresPage />} />
+            <Route path="/entregas" element={<EntregasPage />} />
+            <Route path="/financeiro/caixa" element={<CaixaPage />} />
+            <Route path="/financeiro/titulos" element={<TitulosPage />} />
+            <Route path="/financeiro/fluxo-caixa" element={<FluxoCaixaPage />} />
+          </Routes>
+        </Suspense>
+      </AppLayout>
+    </BrowserRouter>
+  )
+}
+
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
+      <p className="text-2xl font-semibold text-gray-400">{title}</p>
+      <p className="text-sm">Módulo em desenvolvimento</p>
+    </div>
+  )
+}
