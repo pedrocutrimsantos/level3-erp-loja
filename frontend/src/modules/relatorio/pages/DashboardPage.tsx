@@ -66,7 +66,7 @@ export default function DashboardPage() {
     )
   }
 
-  const chartData = data.vendasUltimos30Dias.map((v) => ({
+  const chartData = (data.vendasUltimos30Dias ?? []).map((v) => ({
     data: formatarDataCurta(v.data),
     total: parseFloat(v.total),
     quantidade: v.quantidade,
@@ -212,11 +212,11 @@ export default function DashboardPage() {
             <p className="mb-4 text-sm font-semibold text-foreground">
               Top 5 Produtos — últimos 30 dias
             </p>
-            {data.topProdutos.length === 0 ? (
+            {(data.topProdutos ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem vendas no período</p>
             ) : (
               <div className="space-y-3">
-                {data.topProdutos.map((p, i) => (
+                {(data.topProdutos ?? []).map((p, i) => (
                   <div key={p.produtoId} className="flex items-center gap-3">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-900 text-xs font-bold text-white">
                       {i + 1}
@@ -244,13 +244,13 @@ export default function DashboardPage() {
             <p className="mb-4 text-sm font-semibold text-foreground">
               Estoque Crítico — menores saldos
             </p>
-            {data.estoqueCritico.length === 0 ? (
+            {(data.estoqueCritico ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nenhum produto com saldo crítico
               </p>
             ) : (
               <div className="space-y-3">
-                {data.estoqueCritico.map((e) => (
+                {(data.estoqueCritico ?? []).map((e) => (
                   <div key={e.produtoId} className="flex items-center gap-3">
                     <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
                     <div className="min-w-0 flex-1">
