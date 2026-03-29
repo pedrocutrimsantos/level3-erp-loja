@@ -1,5 +1,8 @@
--- Romaneio de entrega gerado a partir de uma venda confirmada
-CREATE TABLE IF NOT EXISTS entrega (
+-- A tabela entrega foi definida inicialmente na V002 com estrutura diferente.
+-- Recriamos com a estrutura correta (simples, sem enums legados).
+DROP TABLE IF EXISTS entrega CASCADE;
+
+CREATE TABLE entrega (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     venda_id         UUID NOT NULL REFERENCES venda(id),
     numero           VARCHAR(30) NOT NULL UNIQUE,
@@ -10,4 +13,4 @@ CREATE TABLE IF NOT EXISTS entrega (
     updated_at       TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_entrega_venda_id ON entrega(venda_id);
+CREATE INDEX idx_entrega_venda_id ON entrega(venda_id);
