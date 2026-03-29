@@ -91,3 +91,13 @@ tasks.withType<JavaCompile> {
 tasks.test {
     useJUnitPlatform()
 }
+
+// JDK 17+ module-system warnings com Netty/Exposed em JDK 21+
+tasks.named<JavaExec>("run") {
+    jvmArgs(
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.nio=ALL-UNNAMED",
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+        "-Dio.netty.tryReflectionSetAccessible=true",
+    )
+}
