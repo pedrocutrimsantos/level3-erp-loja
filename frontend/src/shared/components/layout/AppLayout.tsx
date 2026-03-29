@@ -1,5 +1,5 @@
-import React from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   ShoppingCart,
   FileText,
@@ -19,6 +19,8 @@ import {
   Building2,
   Sun,
   Moon,
+  Menu,
+  X,
 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { useTheme } from '@/shared/theme/ThemeContext'
@@ -54,10 +56,10 @@ const navGroups: NavGroup[] = [
   {
     label: 'Estoque',
     items: [
-      { label: 'Produtos', to: '/produtos', icon: <Package className="h-4 w-4" /> },
-      { label: 'Preços de Venda', to: '/produtos/precos', icon: <Tag className="h-4 w-4" /> },
-      { label: 'Saldo', to: '/estoque', icon: <Package className="h-4 w-4" /> },
-      { label: 'Movimentações', to: '/estoque/movimentacoes', icon: <ArrowLeftRight className="h-4 w-4" /> },
+      { label: 'Produtos',        to: '/produtos',                icon: <Package       className="h-4 w-4" /> },
+      { label: 'Preços de Venda', to: '/produtos/precos',         icon: <Tag           className="h-4 w-4" /> },
+      { label: 'Saldo',           to: '/estoque',                 icon: <Package       className="h-4 w-4" /> },
+      { label: 'Movimentações',   to: '/estoque/movimentacoes',   icon: <ArrowLeftRight className="h-4 w-4" /> },
     ],
   },
   {
@@ -69,8 +71,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Compras',
     items: [
-      { label: 'Entradas', to: '/compras/pedidos', icon: <Truck className="h-4 w-4" /> },
-      { label: 'Fornecedores', to: '/fornecedores', icon: <Building2 className="h-4 w-4" /> },
+      { label: 'Entradas',      to: '/compras/pedidos', icon: <Truck     className="h-4 w-4" /> },
+      { label: 'Fornecedores',  to: '/fornecedores',    icon: <Building2 className="h-4 w-4" /> },
     ],
   },
   {
@@ -82,8 +84,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Financeiro',
     items: [
-      { label: 'Caixa', to: '/financeiro/caixa', icon: <Wallet className="h-4 w-4" /> },
-      { label: 'Títulos', to: '/financeiro/titulos', icon: <CreditCard className="h-4 w-4" /> },
+      { label: 'Caixa',         to: '/financeiro/caixa',        icon: <Wallet       className="h-4 w-4" /> },
+      { label: 'Títulos',       to: '/financeiro/titulos',      icon: <CreditCard   className="h-4 w-4" /> },
       { label: 'Fluxo de Caixa', to: '/financeiro/fluxo-caixa', icon: <CalendarClock className="h-4 w-4" /> },
     ],
   },
@@ -95,65 +97,133 @@ export interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const location = useLocation()
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-background dark:bg-[#0d1117]">
-      {/* Sidebar */}
-      <aside className="flex w-60 shrink-0 flex-col border-r border-primary-800 bg-primary-900 text-primary-50 dark:bg-[#111820] dark:border-[#243040]">
-        {/* Logo */}
-        <div className="flex items-center gap-2 border-b border-primary-700 px-4 py-5 dark:border-[#243040]">
+  // Fecha o drawer ao navegar
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [location.pathname])
+
+  // Bloqueia scroll do body quando drawer está aberto
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [drawerOpen])
+
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <div className="flex items-center justify-between border-b border-primary-700 px-4 py-5 dark:border-[#243040]">
+        <div className="flex items-center gap-2">
           <TreePine className="h-6 w-6 text-secondary" />
           <span className="font-semibold text-sm leading-tight">Shopping das Madeiras</span>
         </div>
+        {/* Botão fechar — só no drawer mobile */}
+        <button
+          className="md:hidden rounded-md p-1 text-primary-200 hover:bg-primary-800"
+          onClick={() => setDrawerOpen(false)}
+          aria-label="Fechar menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 pb-2">
-          {navGroups.map((group) => (
-            <div key={group.label} className="mb-4">
-              <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-primary-300 dark:text-[#94a3b8]">
-                {group.label}
-              </p>
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors',
-                      isActive
-                        ? 'bg-primary-700 text-white font-medium dark:bg-[#243040] dark:text-[#e2e8f0]'
-                        : 'text-primary-100 hover:bg-primary-800 hover:text-white dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]'
-                    )
-                  }
-                >
-                  {item.icon}
-                  {item.label}
-                </NavLink>
-              ))}
-            </div>
-          ))}
-        </nav>
-        {/* Toggle de tema */}
-        <div className="border-t border-primary-700 px-2 py-3 dark:border-[#243040]">
-          <button
-            onClick={toggleTheme}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-primary-100 transition-colors hover:bg-primary-800 dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]"
-          >
-            {theme === 'dark'
-              ? <Sun  className="h-4 w-4 shrink-0" />
-              : <Moon className="h-4 w-4 shrink-0" />}
-            {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-          </button>
-        </div>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-2 py-4 pb-2">
+        {navGroups.map((group) => (
+          <div key={group.label} className="mb-4">
+            <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-primary-300 dark:text-[#94a3b8]">
+              {group.label}
+            </p>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors',
+                    isActive
+                      ? 'bg-primary-700 text-white font-medium dark:bg-[#243040] dark:text-[#e2e8f0]'
+                      : 'text-primary-100 hover:bg-primary-800 hover:text-white dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]'
+                  )
+                }
+              >
+                {item.icon}
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* Toggle de tema */}
+      <div className="border-t border-primary-700 px-2 py-3 dark:border-[#243040]">
+        <button
+          onClick={toggleTheme}
+          className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-primary-100 transition-colors hover:bg-primary-800 dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]"
+        >
+          {theme === 'dark'
+            ? <Sun  className="h-4 w-4 shrink-0" />
+            : <Moon className="h-4 w-4 shrink-0" />}
+          {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+        </button>
+      </div>
+    </>
+  )
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background dark:bg-[#0d1117]">
+
+      {/* ── Sidebar desktop (md+) ─────────────────────────────────────────── */}
+      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-primary-800 bg-primary-900 text-primary-50 dark:bg-[#111820] dark:border-[#243040]">
+        {sidebarContent}
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto bg-background dark:bg-[#0d1117]">
-        <div className="min-h-full p-6 text-foreground dark:text-[#e2e8f0]">
-          {children ?? <Outlet />}
-        </div>
-      </main>
+      {/* ── Drawer mobile ─────────────────────────────────────────────────── */}
+      {/* Overlay */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {/* Painel */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-primary-900 text-primary-50 dark:bg-[#111820] transition-transform duration-300 md:hidden',
+          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* ── Área principal ────────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+
+        {/* Topbar mobile */}
+        <header className="flex items-center gap-3 border-b border-border bg-background px-4 py-3 dark:bg-[#0d1117] dark:border-[#243040] md:hidden">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="rounded-md p-1.5 text-foreground hover:bg-muted"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <TreePine className="h-5 w-5 text-secondary" />
+            <span className="font-semibold text-sm text-foreground">Shopping das Madeiras</span>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-background dark:bg-[#0d1117]">
+          <div className="min-h-full p-4 md:p-6 text-foreground dark:text-[#e2e8f0]">
+            {children ?? <Outlet />}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

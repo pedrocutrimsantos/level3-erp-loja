@@ -711,7 +711,7 @@ export default function VendaBalcaoPage() {
     <div>
       <PageHeader title="Balcão de Vendas" subtitle="Registre vendas de produtos em estoque" />
 
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-6 lg:flex-row">
         {/* Coluna esquerda — produtos */}
         <div className="flex-[3] min-w-0">
           <div className="mb-4">
@@ -773,7 +773,7 @@ export default function VendaBalcaoPage() {
 
         {/* Coluna direita — carrinho */}
         <div className="flex-[2] min-w-0">
-          <div className="sticky top-4 space-y-4">
+          <div className="lg:sticky lg:top-4 space-y-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
