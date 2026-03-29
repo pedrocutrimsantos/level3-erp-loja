@@ -106,8 +106,8 @@ export default function FluxoCaixaPage() {
 
   // Agrupa lançamentos por data de vencimento
   const grupos = useMemo(() => {
-    if (!data) return []
-    const lance = data.lancamentos.filter((l) => {
+    if (!data || typeof data !== 'object' || !('lancamentos' in data)) return []
+    const lance = (data.lancamentos ?? []).filter((l) => {
       if (filtro !== 'TODOS' && l.tipo !== filtro) return false
       if (soVencidos && !l.vencido) return false
       return true

@@ -11,9 +11,16 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Interceptor: se 401 → redirecionar para /login (preparado para auth futura)
+// Interceptor: rejeita respostas HTML (nginx retornando index.html para chamadas de API)
+// e redireciona 401 para login (preparado para auth futura)
 api.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    const ct = r.headers['content-type'] ?? ''
+    if (ct.includes('text/html')) {
+      return Promise.reject(new Error('API indisponível: verifique a configuração do servidor.'))
+    }
+    return r
+  },
   (err) => {
     if (err.response?.status === 401) window.location.href = '/login'
     return Promise.reject(err)
