@@ -87,11 +87,11 @@ export default function DashboardPage() {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="mt-2 text-2xl font-bold text-foreground">
-              {formatarReais(data.faturamentoDia)}
+              {formatarReais(data.faturamentoDia ?? '0')}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {data.quantidadeVendasDia}{' '}
-              {data.quantidadeVendasDia === 1 ? 'venda' : 'vendas'}
+              {data.quantidadeVendasDia ?? 0}{' '}
+              {(data.quantidadeVendasDia ?? 0) === 1 ? 'venda' : 'vendas'}
             </p>
           </CardContent>
         </Card>
@@ -105,11 +105,11 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="mt-2 text-2xl font-bold text-foreground">
-              {formatarReais(data.faturamentoMes)}
+              {formatarReais(data.faturamentoMes ?? '0')}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {data.quantidadeVendasMes}{' '}
-              {data.quantidadeVendasMes === 1 ? 'venda' : 'vendas'}
+              {data.quantidadeVendasMes ?? 0}{' '}
+              {(data.quantidadeVendasMes ?? 0) === 1 ? 'venda' : 'vendas'}
             </p>
           </CardContent>
         </Card>
@@ -123,11 +123,11 @@ export default function DashboardPage() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="mt-2 text-2xl font-bold text-foreground">
-              {formatarReais(data.titulosEmAberto.valorTotal)}
+              {formatarReais(data.titulosEmAberto?.valorTotal ?? '0')}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {data.titulosEmAberto.quantidade}{' '}
-              {data.titulosEmAberto.quantidade === 1 ? 'título' : 'títulos'}
+              {data.titulosEmAberto?.quantidade ?? 0}{' '}
+              {(data.titulosEmAberto?.quantidade ?? 0) === 1 ? 'título' : 'títulos'}
             </p>
           </CardContent>
         </Card>
@@ -141,11 +141,11 @@ export default function DashboardPage() {
               <Receipt className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="mt-2 text-2xl font-bold text-foreground">
-              {formatarReais(data.contasAPagar.valorTotal)}
+              {formatarReais(data.contasAPagar?.valorTotal ?? '0')}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {data.contasAPagar.quantidade}{' '}
-              {data.contasAPagar.quantidade === 1 ? 'título' : 'títulos'} em aberto
+              {data.contasAPagar?.quantidade ?? 0}{' '}
+              {(data.contasAPagar?.quantidade ?? 0) === 1 ? 'título' : 'títulos'} em aberto
             </p>
           </CardContent>
         </Card>
