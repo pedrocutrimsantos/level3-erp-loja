@@ -57,7 +57,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (isError || !data) {
+  if (isError || !data || typeof data !== 'object' || !('titulosEmAberto' in data)) {
     return (
       <div>
         <PageHeader title="Dashboard" subtitle="Visão geral do negócio" />
