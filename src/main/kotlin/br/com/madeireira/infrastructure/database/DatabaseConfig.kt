@@ -25,7 +25,12 @@ object DatabaseConfig {
             // Aceita esse formato diretamente (sem precisar de DB_URL/DB_USER/DB_PASSWORD separados)
             val databaseUrl = System.getenv("DATABASE_URL") ?: env["DATABASE_URL"]
             if (databaseUrl != null) {
-                jdbcUrl = databaseUrl.replace(Regex("^postgresql?://"), "jdbc:postgresql://")
+                // Railway usa postgresql://user:pass@host:port/db — JDBC não aceita credenciais na URL
+                val uri = java.net.URI(databaseUrl.replace(Regex("^postgresql?://"), "http://"))
+                jdbcUrl  = "jdbc:postgresql://${uri.host}:${uri.port}${uri.path}"
+                val userInfo = uri.userInfo?.split(":", limit = 2) ?: emptyList()
+                if (userInfo.isNotEmpty()) username = userInfo[0]
+                if (userInfo.size > 1)     password = userInfo[1]
             } else {
                 jdbcUrl  = env("DB_URL",      "jdbc:postgresql://localhost:5432/madeireira")
                 username = env("DB_USER",     "postgres")
