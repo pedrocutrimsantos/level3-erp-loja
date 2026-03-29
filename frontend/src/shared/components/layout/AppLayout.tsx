@@ -21,6 +21,7 @@ import {
   Moon,
   Menu,
   X,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { useTheme } from '@/shared/theme/ThemeContext'
@@ -95,9 +96,35 @@ export interface AppLayoutProps {
   children?: React.ReactNode
 }
 
+// Grupos recolhidos por padrão (persistido no localStorage)
+const STORAGE_KEY = 'nav-collapsed'
+
+function useCollapsedGroups() {
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  function toggle(label: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      next.has(label) ? next.delete(label) : next.add(label)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]))
+      return next
+    })
+  }
+
+  return { collapsed, toggle }
+}
+
 export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { collapsed, toggle } = useCollapsedGroups()
   const location = useLocation()
 
   // Fecha o drawer ao navegar
@@ -131,31 +158,48 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-4 pb-2">
-        {navGroups.map((group) => (
-          <div key={group.label} className="mb-4">
-            <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-primary-300 dark:text-[#94a3b8]">
-              {group.label}
-            </p>
-            {group.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors',
-                    isActive
-                      ? 'bg-primary-700 text-white font-medium dark:bg-[#243040] dark:text-[#e2e8f0]'
-                      : 'text-primary-100 hover:bg-primary-800 hover:text-white dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]'
-                  )
-                }
+        {navGroups.map((group) => {
+          const isCollapsed = collapsed.has(group.label)
+          return (
+            <div key={group.label} className="mb-1">
+              <button
+                onClick={() => toggle(group.label)}
+                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-300 hover:bg-primary-800/50 dark:text-[#94a3b8] dark:hover:bg-[#1c2636] transition-colors"
               >
-                {item.icon}
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+                {group.label}
+                <ChevronDown
+                  className={cn(
+                    'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
+                    isCollapsed ? '-rotate-90' : 'rotate-0'
+                  )}
+                />
+              </button>
+
+              {!isCollapsed && (
+                <div className="mt-0.5 mb-2">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors',
+                          isActive
+                            ? 'bg-primary-700 text-white font-medium dark:bg-[#243040] dark:text-[#e2e8f0]'
+                            : 'text-primary-100 hover:bg-primary-800 hover:text-white dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]'
+                        )
+                      }
+                    >
+                      {item.icon}
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </nav>
 
       {/* Toggle de tema */}
