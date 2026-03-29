@@ -47,11 +47,13 @@ object DatabaseConfig {
 
         Database.connect(dataSource)
 
-        Flyway.configure()
+        val flyway = Flyway.configure()
             .dataSource(dataSource)
             .locations("classpath:db/migration")
             .load()
-            .migrate()
+
+        flyway.repair()   // atualiza checksums caso migrations já aplicadas tenham sido editadas
+        flyway.migrate()
     }
 
     suspend fun <T> dbQuery(block: suspend () -> T): T =
