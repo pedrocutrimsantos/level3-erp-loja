@@ -21,9 +21,16 @@ object DatabaseConfig {
 
     fun init() {
         val config = HikariConfig().apply {
-            jdbcUrl         = env("DB_URL",      "jdbc:postgresql://localhost:5432/madeireira")
-            username        = env("DB_USER",     "postgres")
-            password        = env("DB_PASSWORD", "postgres")
+            // Railway injeta DATABASE_URL no formato postgres://user:pass@host:port/db
+            // Aceita esse formato diretamente (sem precisar de DB_URL/DB_USER/DB_PASSWORD separados)
+            val databaseUrl = System.getenv("DATABASE_URL") ?: env["DATABASE_URL"]
+            if (databaseUrl != null) {
+                jdbcUrl = databaseUrl.replace(Regex("^postgres://"), "jdbc:postgresql://")
+            } else {
+                jdbcUrl  = env("DB_URL",      "jdbc:postgresql://localhost:5432/madeireira")
+                username = env("DB_USER",     "postgres")
+                password = env("DB_PASSWORD", "postgres")
+            }
             driverClassName = "org.postgresql.Driver"
             maximumPoolSize = 10
             isAutoCommit    = false
