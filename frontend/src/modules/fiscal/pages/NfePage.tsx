@@ -226,6 +226,7 @@ export default function NfePage() {
       {/* Modal cancelamento */}
       {modalCancelar && (
         <Modal
+          open={!!modalCancelar}
           title={`Cancelar NF ${modalCancelar.numero.toString().padStart(9, '0')}`}
           onClose={() => { setModalCancelar(null); setJustificativa(''); setErroCancelar('') }}
         >
