@@ -22,9 +22,14 @@ import {
   Menu,
   X,
   ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { useTheme } from '@/shared/theme/ThemeContext'
+
+const APP_VERSION = '0.1.0'
+
+// ── Estrutura de navegação ────────────────────────────────────────────────────
 
 interface NavItem {
   label: string
@@ -57,9 +62,9 @@ const navGroups: NavGroup[] = [
   {
     label: 'Estoque',
     items: [
-      { label: 'Produtos',        to: '/produtos',                icon: <Package       className="h-4 w-4" /> },
-      { label: 'Preços de Venda', to: '/produtos/precos',         icon: <Tag           className="h-4 w-4" /> },
-      { label: 'Saldo',           to: '/estoque',                 icon: <Package       className="h-4 w-4" /> },
+      { label: 'Produtos',        to: '/produtos',                icon: <Package        className="h-4 w-4" /> },
+      { label: 'Preços de Venda', to: '/produtos/precos',         icon: <Tag            className="h-4 w-4" /> },
+      { label: 'Saldo',           to: '/estoque',                 icon: <Package        className="h-4 w-4" /> },
       { label: 'Movimentações',   to: '/estoque/movimentacoes',   icon: <ArrowLeftRight className="h-4 w-4" /> },
     ],
   },
@@ -72,8 +77,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Compras',
     items: [
-      { label: 'Entradas',      to: '/compras/pedidos', icon: <Truck     className="h-4 w-4" /> },
-      { label: 'Fornecedores',  to: '/fornecedores',    icon: <Building2 className="h-4 w-4" /> },
+      { label: 'Entradas',     to: '/compras/pedidos', icon: <Truck     className="h-4 w-4" /> },
+      { label: 'Fornecedores', to: '/fornecedores',    icon: <Building2 className="h-4 w-4" /> },
     ],
   },
   {
@@ -85,18 +90,23 @@ const navGroups: NavGroup[] = [
   {
     label: 'Financeiro',
     items: [
-      { label: 'Caixa',         to: '/financeiro/caixa',        icon: <Wallet       className="h-4 w-4" /> },
-      { label: 'Títulos',       to: '/financeiro/titulos',      icon: <CreditCard   className="h-4 w-4" /> },
+      { label: 'Caixa',          to: '/financeiro/caixa',        icon: <Wallet        className="h-4 w-4" /> },
+      { label: 'Títulos',        to: '/financeiro/titulos',      icon: <CreditCard    className="h-4 w-4" /> },
       { label: 'Fluxo de Caixa', to: '/financeiro/fluxo-caixa', icon: <CalendarClock className="h-4 w-4" /> },
     ],
   },
 ]
 
-export interface AppLayoutProps {
-  children?: React.ReactNode
-}
+// Itens fixados na barra inferior mobile
+const bottomNavItems = [
+  { label: 'Dashboard', to: '/relatorios/dashboard', icon: BarChart2 },
+  { label: 'Balcão',    to: '/vendas/balcao',         icon: ShoppingCart },
+  { label: 'Estoque',   to: '/estoque',               icon: Package },
+  { label: 'Caixa',     to: '/financeiro/caixa',      icon: Wallet },
+]
 
-// Grupos recolhidos por padrão (persistido no localStorage)
+// ── Hook: grupos recolhíveis ──────────────────────────────────────────────────
+
 const STORAGE_KEY = 'nav-collapsed'
 
 function useCollapsedGroups() {
@@ -119,6 +129,12 @@ function useCollapsedGroups() {
   }
 
   return { collapsed, toggle }
+}
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+
+export interface AppLayoutProps {
+  children?: React.ReactNode
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -146,7 +162,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           <TreePine className="h-6 w-6 text-secondary" />
           <span className="font-semibold text-sm leading-tight">Shopping das Madeiras</span>
         </div>
-        {/* Botão fechar — só no drawer mobile */}
         <button
           className="md:hidden rounded-md p-1 text-primary-200 hover:bg-primary-800"
           onClick={() => setDrawerOpen(false)}
@@ -202,8 +217,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         })}
       </nav>
 
-      {/* Toggle de tema */}
-      <div className="border-t border-primary-700 px-2 py-3 dark:border-[#243040]">
+      {/* Rodapé: tema + versão */}
+      <div className="border-t border-primary-700 px-2 py-3 space-y-1 dark:border-[#243040]">
         <button
           onClick={toggleTheme}
           className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-primary-100 transition-colors hover:bg-primary-800 dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0]"
@@ -213,6 +228,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             : <Moon className="h-4 w-4 shrink-0" />}
           {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
         </button>
+        <p className="px-2 text-[10px] text-primary-400 dark:text-[#4a5568] select-none">
+          v{APP_VERSION}
+        </p>
       </div>
     </>
   )
@@ -220,13 +238,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-background dark:bg-[#0d1117]">
 
-      {/* ── Sidebar desktop (md+) ─────────────────────────────────────────── */}
+      {/* ── Sidebar desktop (md+) ────────────────────────────────────────────── */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-primary-800 bg-primary-900 text-primary-50 dark:bg-[#111820] dark:border-[#243040]">
         {sidebarContent}
       </aside>
 
-      {/* ── Drawer mobile ─────────────────────────────────────────────────── */}
-      {/* Overlay */}
+      {/* ── Drawer mobile ────────────────────────────────────────────────────── */}
       {drawerOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 md:hidden"
@@ -234,7 +251,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           aria-hidden="true"
         />
       )}
-      {/* Painel */}
       <aside
         className={cn(
           'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-primary-900 text-primary-50 dark:bg-[#111820] transition-transform duration-300 md:hidden',
@@ -244,30 +260,65 @@ export function AppLayout({ children }: AppLayoutProps) {
         {sidebarContent}
       </aside>
 
-      {/* ── Área principal ────────────────────────────────────────────────── */}
+      {/* ── Área principal ───────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
 
         {/* Topbar mobile */}
-        <header className="flex items-center gap-3 border-b border-border bg-background px-4 py-3 dark:bg-[#0d1117] dark:border-[#243040] md:hidden">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="rounded-md p-1.5 text-foreground hover:bg-muted"
-            aria-label="Abrir menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+        <header className="flex items-center justify-between border-b border-border bg-background px-4 py-3 dark:bg-[#0d1117] dark:border-[#243040] md:hidden">
           <div className="flex items-center gap-2">
             <TreePine className="h-5 w-5 text-secondary" />
             <span className="font-semibold text-sm text-foreground">Shopping das Madeiras</span>
           </div>
+          <span className="text-[10px] text-muted-foreground select-none">v{APP_VERSION}</span>
         </header>
 
+        {/* Conteúdo — pb-16 no mobile para não ficar atrás da barra inferior */}
         <main className="flex-1 overflow-y-auto bg-background dark:bg-[#0d1117]">
-          <div className="min-h-full p-4 md:p-6 text-foreground dark:text-[#e2e8f0]">
+          <div className="min-h-full p-4 pb-20 md:p-6 md:pb-6 text-foreground dark:text-[#e2e8f0]">
             {children ?? <Outlet />}
           </div>
         </main>
       </div>
+
+      {/* ── Barra de navegação inferior (mobile only) ────────────────────────── */}
+      <nav className="fixed bottom-0 inset-x-0 z-30 flex items-stretch border-t border-border bg-background dark:bg-[#111820] dark:border-[#243040] md:hidden">
+        {bottomNavItems.map(({ label, to, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end
+            className={({ isActive }) =>
+              cn(
+                'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+                isActive
+                  ? 'text-primary dark:text-[#4ade80]'
+                  : 'text-muted-foreground hover:text-foreground'
+              )
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
+                {label}
+              </>
+            )}
+          </NavLink>
+        ))}
+
+        {/* Botão "Mais" — abre o drawer com todos os itens */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className={cn(
+            'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+            drawerOpen
+              ? 'text-primary dark:text-[#4ade80]'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <MoreHorizontal className="h-5 w-5" />
+          Mais
+        </button>
+      </nav>
     </div>
   )
 }
