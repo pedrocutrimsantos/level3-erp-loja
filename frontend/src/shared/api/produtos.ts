@@ -70,6 +70,9 @@ export const produtosApi = {
   listar: (apenasAtivos = true) =>
     api.get<ProdutoResponse[]>('/produtos', { params: { ativo: apenasAtivos } }).then((r) => r.data),
 
+  pesquisar: (q: string, apenasAtivos = true) =>
+    api.get<ProdutoResponse[]>('/produtos', { params: { ativo: apenasAtivos, q } }).then((r) => r.data),
+
   buscar: (id: string) =>
     api.get<ProdutoResponse>(`/produtos/${id}`).then((r) => r.data),
 

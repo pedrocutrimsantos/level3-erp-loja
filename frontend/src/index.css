@@ -3,111 +3,118 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   TOKENS SEMÂNTICOS
-   Valores em canais RGB separados (permitem /opacity no Tailwind)
+   TOKENS SEMÂNTICOS — padrão Berry Design System
+   Valores em canais RGB separados (suportam /opacity no Tailwind)
    ───────────────────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    /* ── Superfícies ── */
-    --background:         237 241 248;   /* azul-cinza frio — fundo da página        */
-    --card:               255 255 255;   /* branco puro — cards visíveis no fundo    */
-    --muted:              229 235 244;   /* sutil — cabeçalhos de tabela, seções     */
+    /* ── Superfícies — Berry light palette ── */
+    --background:         238 242 246;   /* #EEF2F6 — cinza-azul Berry             */
+    --card:               255 255 255;   /* #FFFFFF — cards puro branco            */
+    --muted:              242 245 250;   /* #F2F5FA — seções sutis                 */
 
     /* ── Texto ── */
-    --foreground:         7   9  18;     /* quase preto — máximo contraste           */
-    --card-foreground:    7   9  18;
-    --muted-foreground:   67  84 104;    /* cinza-azul médio-escuro — texto secundário */
+    --foreground:         33  33  33;    /* #212121 — texto principal Berry        */
+    --card-foreground:    33  33  33;
+    --muted-foreground:   105 117 134;   /* #697586 — texto secundário Berry       */
 
     /* ── Bordas / inputs ── */
-    --border:             200 212 226;   /* slate-300ish — bordas visíveis           */
+    --border:             227 235 246;   /* #E3EBF6 — bordas suaves Berry          */
     --input:              255 255 255;
-    --input-border:       186 200 216;
+    --input-border:       207 219 233;   /* #CFD8E9                                */
 
     /* ── Interação ── */
-    --accent:             240 253 244;   /* green-50 */
+    --accent:             240 247 255;   /* azul-primário tint                     */
     --accent-foreground:  27  67  50;
+
+    /* ── Foco (mantém verde marca) ── */
     --ring:               27  67  50;
 
     /* ── Estado ── */
-    --destructive:        185  28  28;   /* red-700 — alto contraste em claro        */
+    --destructive:        211  47  47;   /* red-700                                */
     --destructive-fg:     255 255 255;
-    --success:            21  128  61;   /* green-700 — alto contraste em claro      */
+    --success:            46  125  50;   /* green-800                              */
     --success-fg:         255 255 255;
-    --warning:            161  86   0;   /* amber-800 — alto contraste em claro      */
+    --warning:            245 124   0;   /* orange-700                             */
     --warning-fg:         255 255 255;
 
     /* ── Gráficos ── */
-    --chart-1:            27  67  50;    /* verde marca — barras em claro            */
-    --chart-grid:         200 212 226;   /* mesma que border                         */
-    --chart-label:        100 116 139;   /* slate-500                                */
+    --chart-1:            27  67  50;
+    --chart-grid:         227 235 246;
+    --chart-label:        105 117 134;
     --chart-tooltip-bg:   255 255 255;
-    --chart-tooltip-border: 200 212 226;
+    --chart-tooltip-border: 227 235 246;
   }
 
   .dark {
     color-scheme: dark;
 
     /* ── Superfícies ── */
-    --background:         13  17  23;   /* #0d1117 — fundo da página                */
-    --card:               22  29  39;   /* #161d27 — fundo de cards / painéis       */
-    --muted:              28  38  54;   /* levemente mais claro para seções         */
+    --background:         13  17  23;
+    --card:               22  29  39;
+    --muted:              28  38  54;
 
     /* ── Texto ── */
-    --foreground:         226 232 240;  /* #e2e8f0 — texto principal                */
+    --foreground:         226 232 240;
     --card-foreground:    226 232 240;
-    --muted-foreground:   148 163 184;  /* #94a3b8 — texto secundário               */
+    --muted-foreground:   148 163 184;
 
     /* ── Bordas / inputs ── */
-    --border:             36  48  64;   /* #243040 — bordas                         */
-    --input:              13  17  23;   /* #0d1117 — fundo dos inputs               */
-    --input-border:       36  48  64;   /* #243040                                  */
+    --border:             36  48  64;
+    --input:              13  17  23;
+    --input-border:       36  48  64;
 
     /* ── Interação ── */
-    --accent:             36  48  64;   /* #243040 — hover discreto                 */
-    --accent-foreground:  134 239 172;  /* green-300                                */
-    --ring:               74  222 128;  /* green-400 — foco visível                 */
+    --accent:             36  48  64;
+    --accent-foreground:  134 239 172;
+    --ring:               74  222 128;
 
     /* ── Estado ── */
-    --destructive:        248 113 113;  /* red-400 — vibrante no escuro             */
+    --destructive:        248 113 113;
     --destructive-fg:     255 255 255;
-    --success:            74  222 128;  /* green-400                                */
-    --success-fg:         13  17  23;   /* #0d1117                                  */
-    --warning:            251 191  36;  /* amber-400                                */
-    --warning-fg:         13  17  23;   /* #0d1117                                  */
+    --success:            74  222 128;
+    --success-fg:         13  17  23;
+    --warning:            251 191  36;
+    --warning-fg:         13  17  23;
 
     /* ── Gráficos ── */
-    --chart-1:            74  222 128;  /* green-400 — barras                       */
-    --chart-grid:         36  48  64;   /* #243040                                  */
-    --chart-label:        148 163 184;  /* #94a3b8                                  */
-    --chart-tooltip-bg:   22  29  39;   /* #161d27                                  */
-    --chart-tooltip-border: 36  48  64; /* #243040                                  */
+    --chart-1:            74  222 128;
+    --chart-grid:         36  48  64;
+    --chart-label:        148 163 184;
+    --chart-tooltip-bg:   22  29  39;
+    --chart-tooltip-border: 36  48  64;
   }
 
   html {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     background-color: rgb(var(--background));
     color: rgb(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Garante fundo e texto escuro explicitamente — backup para quando CSS vars falham */
   html.dark,
   html.dark body {
     background-color: #0d1117;
     color: #e2e8f0;
   }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: rgb(var(--border)); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--muted-foreground) / 0.4); }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   OVERRIDES GLOBAIS NO MODO ESCURO
-   Fora de @layer → precedência máxima, sobrepõe qualquer utilitário Tailwind.
+   DARK MODE OVERRIDES — precedência máxima
    ───────────────────────────────────────────────────────────────────────────── */
 
-/* ── Garantia de fundo escuro em toda a interface ── */
-/* Estes seletores cobrem a página, main, e qualquer container sem classe explícita */
-.dark body           { background-color: #0d1117; }
-.dark #root          { background-color: #0d1117; }
-.dark main           { background-color: #0d1117; }
+.dark body    { background-color: #0d1117; }
+.dark #root   { background-color: #0d1117; }
+.dark main    { background-color: #0d1117; }
 
-/* Texto gray-* (hardcoded em páginas legadas) */
+/* Texto gray-* legado */
 .dark .text-gray-950,
 .dark .text-gray-900,
 .dark .text-gray-800  { color: rgb(var(--foreground)); }
@@ -116,53 +123,45 @@
 .dark .text-gray-500  { color: rgb(var(--muted-foreground) / 0.8); }
 .dark .text-gray-400  { color: rgb(var(--muted-foreground) / 0.65); }
 
-/* Fundos gray-* */
-.dark .bg-white     { background-color: #161d27 !important; }
-.dark .bg-gray-50   { background-color: #0d1117; }
-.dark .bg-gray-100  { background-color: #1c2636; }
-.dark .bg-gray-200  { background-color: #243040; }
-.dark .bg-gray-800  { background-color: #1c2636; }
+/* Fundos gray-* legado */
+.dark .bg-white    { background-color: #161d27 !important; }
+.dark .bg-gray-50  { background-color: #0d1117; }
+.dark .bg-gray-100 { background-color: #1c2636; }
+.dark .bg-gray-200 { background-color: #243040; }
+.dark .bg-gray-800 { background-color: #1c2636; }
 
-/* ── Destructive / red ── */
+/* Destructive */
 .dark .text-red-900, .dark .text-red-800, .dark .text-red-700,
 .dark .text-red-600, .dark .text-red-500 { color: rgb(var(--destructive)); }
 .dark .bg-red-200  { background-color: rgb(var(--destructive) / 0.25); }
 .dark .bg-red-100  { background-color: rgb(var(--destructive) / 0.15); }
-.dark .bg-red-50   { background-color: rgb(var(--destructive) / 0.1); }
+.dark .bg-red-50   { background-color: rgb(var(--destructive) / 0.1);  }
 .dark .bg-red-600  { background-color: rgb(var(--destructive)); }
-.dark .bg-red-700  { background-color: rgb(var(--destructive) / 0.85); }
 .dark .border-red-300, .dark .border-red-200 { border-color: rgb(var(--destructive) / 0.4); }
 
-/* ── Success / green / emerald ── */
+/* Success */
 .dark .text-green-900, .dark .text-green-800, .dark .text-green-700,
 .dark .text-green-600, .dark .text-emerald-800, .dark .text-emerald-700,
 .dark .text-emerald-600 { color: rgb(var(--success)); }
 .dark .bg-green-100, .dark .bg-emerald-100 { background-color: rgb(var(--success) / 0.15); }
-.dark .bg-green-50,  .dark .bg-emerald-50  { background-color: rgb(var(--success) / 0.1); }
-.dark .bg-green-500, .dark .bg-green-600   { background-color: rgb(var(--success) / 0.85); }
+.dark .bg-green-50,  .dark .bg-emerald-50  { background-color: rgb(var(--success) / 0.1);  }
 .dark .border-green-300, .dark .border-green-200,
 .dark .border-emerald-300, .dark .border-emerald-200 { border-color: rgb(var(--success) / 0.4); }
 
-/* ── Warning / amber / orange ── */
+/* Warning */
 .dark .text-amber-800, .dark .text-amber-700, .dark .text-amber-600,
 .dark .text-orange-800, .dark .text-orange-700, .dark .text-orange-600 { color: rgb(var(--warning)); }
 .dark .bg-amber-100, .dark .bg-orange-100 { background-color: rgb(var(--warning) / 0.15); }
-.dark .bg-amber-50,  .dark .bg-orange-50  { background-color: rgb(var(--warning) / 0.1); }
-.dark .bg-amber-500  { background-color: rgb(var(--warning) / 0.85); }
+.dark .bg-amber-50,  .dark .bg-orange-50  { background-color: rgb(var(--warning) / 0.1);  }
 .dark .border-amber-300, .dark .border-amber-200,
 .dark .border-orange-300, .dark .border-orange-200 { border-color: rgb(var(--warning) / 0.4); }
 
-/* ── Rose (→ destructive) ── */
+/* Rose */
 .dark .text-rose-800, .dark .text-rose-700, .dark .text-rose-600 { color: rgb(var(--destructive)); }
 .dark .bg-rose-100 { background-color: rgb(var(--destructive) / 0.15); }
-.dark .bg-rose-50  { background-color: rgb(var(--destructive) / 0.1); }
-.dark .border-rose-300, .dark .border-rose-200 { border-color: rgb(var(--destructive) / 0.4); }
+.dark .bg-rose-50  { background-color: rgb(var(--destructive) / 0.1);  }
 
-/* ── Blue (→ accent) ── */
-.dark .text-blue-800, .dark .text-blue-700,
-.dark .text-blue-600 { color: rgb(var(--accent-foreground)); }
-
-/* ── Form elements nativos ── */
+/* Form elements */
 .dark select,
 .dark textarea,
 .dark input[type="date"],
@@ -180,17 +179,16 @@
   color: rgb(var(--foreground));
 }
 
-/* ── Foco ── */
+/* Foco */
 .dark *:focus-visible { outline-color: rgb(var(--ring)); }
 
-/* ── Scrollbar ── */
-.dark ::-webkit-scrollbar-track  { background: rgb(var(--background)); }
-.dark ::-webkit-scrollbar-thumb  { background: rgb(var(--border)); border-radius: 4px; }
+/* Scrollbar dark */
+.dark ::-webkit-scrollbar-thumb       { background: rgb(var(--border)); }
 .dark ::-webkit-scrollbar-thumb:hover { background: rgb(var(--muted-foreground) / 0.5); }
 
-/* ── Garantia de texto legível — sobrepõe qualquer herança incorreta ── */
+/* Garantias de cor legadas */
 .dark .text-foreground,
-.dark .text-card-foreground    { color: #e2e8f0; }
-.dark .text-muted-foreground   { color: #94a3b8; }
-.dark .text-primary            { color: #4ade80; }
-.dark                          { color: #e2e8f0; }
+.dark .text-card-foreground  { color: #e2e8f0; }
+.dark .text-muted-foreground { color: #94a3b8; }
+.dark .text-primary          { color: #4ade80; }
+.dark                        { color: #e2e8f0; }

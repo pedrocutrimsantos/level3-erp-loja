@@ -7,19 +7,17 @@ import br.com.madeireira.modules.financeiro.domain.model.StatusTitulo
 import br.com.madeireira.modules.financeiro.domain.model.TipoTitulo
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.util.UUID
 
-fun Application.tituloRoutes(service: TituloService) {
-    routing {
-        // GET /api/v1/financeiro/fluxo-caixa?dias=30
+fun Route.tituloRoutes(service: TituloService) {
+    // GET /api/v1/financeiro/fluxo-caixa?dias=30
         get("/api/v1/financeiro/fluxo-caixa") {
             val dias = call.request.queryParameters["dias"]?.toIntOrNull()?.coerceIn(1, 365) ?: 30
             call.respond(HttpStatusCode.OK, service.fluxoCaixa(dias))
@@ -73,5 +71,4 @@ fun Application.tituloRoutes(service: TituloService) {
                 }
             }
         }
-    }
 }

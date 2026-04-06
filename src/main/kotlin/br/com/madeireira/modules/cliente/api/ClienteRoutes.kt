@@ -5,21 +5,19 @@ import br.com.madeireira.modules.cliente.api.dto.CriarClienteRequest
 import br.com.madeireira.modules.cliente.application.ClienteService
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.util.UUID
 
-fun Application.clienteRoutes(service: ClienteService) {
-    routing {
-        route("/api/v1/clientes") {
+fun Route.clienteRoutes(service: ClienteService) {
+    route("/api/v1/clientes") {
 
             // GET /api/v1/clientes?ativo=true
             get {
@@ -90,7 +88,6 @@ fun Application.clienteRoutes(service: ClienteService) {
                 }
             }
         }
-    }
 }
 
 private fun parseUUID(value: String?): UUID? =

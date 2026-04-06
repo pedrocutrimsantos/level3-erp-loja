@@ -1,5 +1,6 @@
 package br.com.madeireira.modules.fiscal.application
 
+import br.com.madeireira.modules.financeiro.domain.model.FormaPagamento
 import br.com.madeireira.modules.fiscal.domain.model.StatusNf
 import br.com.madeireira.modules.venda.api.dto.NfItemData
 import java.math.BigDecimal
@@ -14,6 +15,9 @@ data class NfEmissaoRequest(
     val numero: Int,
     val itens: List<NfItemData>,
     val valorTotal: BigDecimal,
+    val formaPagamento: FormaPagamento? = null,
+    val clienteNome: String? = null,
+    val clienteCpfCnpj: String? = null,      // apenas dígitos (11=CPF, 14=CNPJ)
 )
 
 data class NfEmissaoResult(
@@ -32,5 +36,5 @@ data class NfCancelamentoResult(
 
 interface NfEmissaoPort {
     suspend fun emitir(request: NfEmissaoRequest): NfEmissaoResult
-    suspend fun cancelar(chaveAcesso: String, justificativa: String): NfCancelamentoResult
+    suspend fun cancelar(vendaId: UUID, chaveAcesso: String, justificativa: String): NfCancelamentoResult
 }

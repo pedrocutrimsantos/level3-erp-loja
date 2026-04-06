@@ -4,18 +4,16 @@ import br.com.madeireira.modules.compra.application.CompraService
 import br.com.madeireira.modules.compra.api.dto.EntradaCompraRequest
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 
-fun Application.compraRoutes(service: CompraService) {
-    routing {
-        route("/api/v1/compras") {
+fun Route.compraRoutes(service: CompraService) {
+    route("/api/v1/compras") {
             // GET /api/v1/compras/entradas?limit=50
             get("entradas") {
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 50
@@ -42,5 +40,4 @@ fun Application.compraRoutes(service: CompraService) {
                 }
             }
         }
-    }
 }

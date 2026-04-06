@@ -12,34 +12,38 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  // Fundo verde marca — legível em ambos os temas
   default:
-    'bg-primary text-primary-foreground hover:bg-primary-800 focus-visible:ring-primary',
+    'bg-primary text-primary-foreground shadow-sm ' +
+    'hover:bg-primary-800 hover:shadow-md active:shadow-sm ' +
+    'focus-visible:ring-primary',
 
-  // Fundo dourado — legível em ambos os temas
   secondary:
-    'bg-secondary text-secondary-foreground hover:bg-secondary-600 focus-visible:ring-secondary',
+    'bg-secondary text-secondary-foreground shadow-sm ' +
+    'hover:bg-secondary-600 hover:shadow-md active:shadow-sm ' +
+    'focus-visible:ring-secondary',
 
-  // Fundo vermelho — legível em ambos os temas
   destructive:
-    'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive',
+    'bg-destructive text-destructive-foreground shadow-sm ' +
+    'hover:bg-destructive/90 hover:shadow-md active:shadow-sm ' +
+    'focus-visible:ring-destructive',
 
-  // Borda visível; texto usa foreground (adapta ao tema)
   outline:
-    'border border-border bg-transparent text-foreground ' +
-    'hover:bg-accent hover:text-accent-foreground ' +
+    'border border-border bg-card text-foreground shadow-sm ' +
+    'hover:bg-muted hover:shadow-md active:shadow-sm ' +
+    'dark:bg-transparent dark:border-[#243040] dark:text-[#e2e8f0] dark:hover:bg-[#243040] ' +
     'focus-visible:ring-ring',
 
-  // Sem borda; texto usa foreground (adapta ao tema)
   ghost:
-    'bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground ' +
+    'bg-transparent text-foreground ' +
+    'hover:bg-muted active:bg-muted/80 ' +
+    'dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0] ' +
     'focus-visible:ring-ring',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-11 px-6 text-base gap-2',
+  sm: 'h-8 px-3 text-xs gap-1.5',
+  md: 'h-9 px-4 text-sm gap-2',
+  lg: 'h-10 px-5 text-sm gap-2',
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -48,7 +52,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center rounded-md font-medium transition-colors',
+        'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
         'disabled:pointer-events-none disabled:opacity-50',
         variantClasses[variant],
@@ -59,7 +63,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     >
       {loading && (
         <svg
-          className="animate-spin h-4 w-4 shrink-0"
+          className="animate-spin h-3.5 w-3.5 shrink-0"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"

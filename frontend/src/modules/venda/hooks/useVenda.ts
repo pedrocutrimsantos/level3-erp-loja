@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { vendasApi, type VendaBalcaoRequest } from '@/shared/api/vendas'
+import { useToast } from '@/shared/store/toastStore'
+import { erroMsg } from '@/shared/utils/erroMsg'
 
 export function useVendas(limit = 50) {
   return useQuery({
@@ -39,6 +41,7 @@ export function useRegistrarOrcamento() {
 
 export function useConfirmarOrcamento() {
   const qc = useQueryClient()
+  const toast = useToast()
   return useMutation({
     mutationFn: (id: string) => vendasApi.confirmarOrcamento(id),
     onSuccess: () => {
@@ -47,15 +50,18 @@ export function useConfirmarOrcamento() {
       qc.invalidateQueries({ queryKey: ['vendas'] })
       qc.invalidateQueries({ queryKey: ['titulos'] })
     },
+    onError: (err) => toast.erro(erroMsg(err, 'Erro ao confirmar orçamento.')),
   })
 }
 
 export function useCancelarOrcamento() {
   const qc = useQueryClient()
+  const toast = useToast()
   return useMutation({
     mutationFn: (id: string) => vendasApi.cancelarOrcamento(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orcamentos'] })
     },
+    onError: (err) => toast.erro(erroMsg(err, 'Erro ao cancelar orçamento.')),
   })
 }

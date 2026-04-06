@@ -13,7 +13,7 @@ import {
   formatarMetros,
   dimensoesValidas,
 } from '@/shared/utils/conversaoMadeira'
-import { useProdutos, usePrecificacao } from '@/modules/produto/hooks/useProdutos'
+import { usePesquisarProdutos, usePrecificacao } from '@/modules/produto/hooks/useProdutos'
 import { useSaldoEstoque } from '@/modules/estoque/hooks/useEstoque'
 import { useVendaBalcao, useRegistrarOrcamento } from '../hooks/useVenda'
 import { useTurno } from '@/modules/financeiro/hooks/useTurno'
@@ -486,11 +486,11 @@ function ClienteSelector({
 
 export default function VendaBalcaoPage() {
   const { data: turno, isLoading: loadingTurno } = useTurno()
-  const { data: produtos, isLoading } = useProdutos(true)
   const { mutate: registrarVenda, isPending } = useVendaBalcao()
   const { mutate: salvarOrcamento, isPending: isPendingOrc } = useRegistrarOrcamento()
 
   const [busca, setBusca] = useState('')
+  const { data: produtos, isFetching } = usePesquisarProdutos(busca)
   const [produtoSelecionado, setProdutoSelecionado] = useState<ProdutoResponse | null>(null)
   const [itens, setItens] = useState<ItemCarrinho[]>([])
   const [clienteSelecionado, setClienteSelecionado] = useState<ClienteSelecionado | null>(null)
@@ -507,17 +507,6 @@ export default function VendaBalcaoPage() {
   }, [formaPagamento])
 
   const tipoPessoa = clienteSelecionado?.tipoPessoa ?? 'ANONIMO'
-
-  const produtosFiltrados = useMemo(() => {
-    if (!produtos) return []
-    const termo = busca.toLowerCase().trim()
-    if (!termo) return produtos
-    return produtos.filter(
-      (p) =>
-        p.descricao.toLowerCase().includes(termo) ||
-        p.codigo.toLowerCase().includes(termo)
-    )
-  }, [produtos, busca])
 
   const totalGeral = itens.reduce((acc, item) => acc + item.valorTotal, 0)
 
@@ -722,19 +711,23 @@ export default function VendaBalcaoPage() {
             />
           </div>
 
-          {isLoading ? (
+          {isFetching ? (
             <div className="animate-pulse space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-16 rounded-lg bg-muted" />
               ))}
             </div>
-          ) : produtosFiltrados.length === 0 ? (
+          ) : busca.trim().length === 0 ? (
             <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-              {busca ? 'Nenhum produto encontrado para a busca.' : 'Nenhum produto cadastrado.'}
+              Digite acima para buscar produtos.
+            </div>
+          ) : produtos && produtos.length === 0 ? (
+            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+              Nenhum produto encontrado para "{busca}".
             </div>
           ) : (
             <div className="space-y-2">
-              {produtosFiltrados.map((produto) => (
+              {(produtos ?? []).map((produto) => (
                 <div
                   key={produto.id}
                   className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"

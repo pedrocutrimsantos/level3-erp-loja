@@ -41,6 +41,12 @@ dependencies {
     implementation("io.ktor:ktor-server-status-pages-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-cors-jvm:$ktorVersion")
 
+    // Ktor client (Focus NF-e adapter)
+    implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth-jvm:$ktorVersion")
+
     // Exposed ORM
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
@@ -60,6 +66,9 @@ dependencies {
 
     // DateTime
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:$datetimeVersion")
+
+    // BCrypt — hash de senhas
+    implementation("org.mindrot:jbcrypt:0.4")
 
     // DotEnv — leitura de .env em desenvolvimento
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")

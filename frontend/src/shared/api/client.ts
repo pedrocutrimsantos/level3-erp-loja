@@ -11,8 +11,24 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Interceptor: rejeita respostas HTML (nginx retornando index.html para chamadas de API)
-// e redireciona 401 para login (preparado para auth futura)
+// Interceptor de request: injeta Bearer token se disponível
+api.interceptors.request.use((config) => {
+  // Lê diretamente do localStorage para evitar dependência circular com o store Zustand
+  const raw = localStorage.getItem('auth')
+  if (raw) {
+    try {
+      const { state } = JSON.parse(raw) as { state: { token: string | null } }
+      if (state?.token) {
+        config.headers.Authorization = `Bearer ${state.token}`
+      }
+    } catch {
+      // JSON inválido — ignora
+    }
+  }
+  return config
+})
+
+// Interceptor de response: rejeita HTML e redireciona 401 para login
 api.interceptors.response.use(
   (r) => {
     const ct = r.headers['content-type'] ?? ''
@@ -22,7 +38,19 @@ api.interceptors.response.use(
     return r
   },
   (err) => {
-    if (err.response?.status === 401) window.location.href = '/login'
+    if (!err.response) {
+      // Sem resposta: rede ou backend fora do ar
+      return Promise.reject(new Error('Sem conexão com o servidor.'))
+    }
+    if (err.response.status === 401) {
+      // Token expirado ou inválido — limpa sessão e vai para login
+      // Exceção: a própria rota de login não deve redirecionar
+      const url = err.config?.url ?? ''
+      if (!url.includes('/auth/login')) {
+        localStorage.removeItem('auth')
+        window.location.href = '/login'
+      }
+    }
     return Promise.reject(err)
   }
 )

@@ -1,7 +1,9 @@
 package br.com.madeireira.modules.fiscal.application
 
-import br.com.madeireira.modules.fiscal.api.dto.NfListItemResponse
-import br.com.madeireira.modules.fiscal.api.dto.VendaPendenteNfResponse
+import br.com.madeireira.modules.cliente.infrastructure.ClienteRepository
+import br.com.madeireira.modules.compra.api.dto.EntradaCompraRequest
+import br.com.madeireira.modules.compra.application.CompraService
+import br.com.madeireira.modules.fiscal.api.dto.*
 import br.com.madeireira.modules.fiscal.domain.model.AmbienteNf
 import br.com.madeireira.modules.fiscal.domain.model.ModeloNf
 import br.com.madeireira.modules.fiscal.domain.model.NfEmitida
@@ -18,7 +20,9 @@ class NfeService(
     private val vendaRepo: VendaRepository,
     private val produtoRepo: ProdutoRepository,
     private val vendaService: VendaService,
+    private val compraService: CompraService? = null,
     private val emissor: NfEmissaoPort = NfEmissaoStub(),
+    private val clienteRepo: ClienteRepository? = null,
 ) {
     // ── Listagem ──────────────────────────────────────────────────────────────
 
@@ -81,15 +85,21 @@ class NfeService(
             vendaService.montarNfItem(item = item, produto = produto, numeroItem = item.numeroLinha)
         }
 
+        val cliente = venda.clienteId?.let { clienteRepo?.findById(it) }
+        val clienteCpfCnpj = cliente?.cnpjCpf?.replace(Regex("[^0-9]"), "")
+
         val now = Instant.now()
         val request = NfEmissaoRequest(
-            vendaId      = vendaId,
-            vendaNumero  = venda.numero,
-            dataEmissao  = now,
-            serie        = serie,
-            numero       = numero,
-            itens        = nfItens,
-            valorTotal   = venda.valorTotal,
+            vendaId        = vendaId,
+            vendaNumero    = venda.numero,
+            dataEmissao    = now,
+            serie          = serie,
+            numero         = numero,
+            itens          = nfItens,
+            valorTotal     = venda.valorTotal,
+            formaPagamento = venda.formaPagamento,
+            clienteNome    = cliente?.razaoSocial,
+            clienteCpfCnpj = clienteCpfCnpj,
         )
 
         val resultado = emissor.emitir(request)
@@ -136,7 +146,8 @@ class NfeService(
         }
 
         val chave = requireNotNull(nf.chaveAcesso) { "NF sem chave de acesso" }
-        val resultado = emissor.cancelar(chave, justificativa)
+        val vendaIdCancel = requireNotNull(nf.vendaId) { "NF sem venda associada" }
+        val resultado = emissor.cancelar(vendaIdCancel, chave, justificativa)
 
         val atualizada = nf.copy(
             statusSefaz           = resultado.status,
@@ -146,9 +157,50 @@ class NfeService(
         )
 
         val salva = nfRepo.update(atualizada)
-        val venda = nf.vendaId?.let { vendaRepo.findVendaById(it) }
+        val venda = vendaRepo.findVendaById(vendaIdCancel)
         return salva.toResponse(vendaNumero = venda?.numero)
     }
+
+    // ── XML Import ───────────────────────────────────────────────────────────────
+
+    fun previewXml(xmlBytes: ByteArray): NfeXmlPreviewResponse =
+        XmlNfeParser.parse(xmlBytes)
+
+    suspend fun importarXml(req: NfeXmlConfirmarRequest): NfeXmlImportarResponse {
+        val svc = compraService
+            ?: throw IllegalStateException("CompraService não configurado para importação de XML")
+
+        val erros = mutableListOf<String>()
+        var importados = 0
+
+        for (item in req.itens) {
+            runCatching {
+                svc.registrarEntrada(
+                    EntradaCompraRequest(
+                        produtoId              = item.produtoId,
+                        quantidade             = item.quantidade,
+                        custoUnitario          = item.valorUnitario,
+                        fornecedorId           = null,
+                        dataVencimento         = null,
+                        formaPagamentoPrevisto = null,
+                        observacao             = item.observacao
+                            ?: "Importado via XML NF-e ${req.chaveAcesso?.take(8) ?: ""}",
+                    )
+                )
+                importados++
+            }.onFailure { e ->
+                erros.add("${item.descricao}: ${e.message}")
+            }
+        }
+
+        return NfeXmlImportarResponse(itensImportados = importados, erros = erros)
+    }
+
+    // ── DANFE ─────────────────────────────────────────────────────────────────
+
+    suspend fun getDanfeData(nfId: UUID): DanfeResponse =
+        nfRepo.getDanfeData(nfId)
+            ?: throw NoSuchElementException("NF não encontrada: $nfId")
 }
 
 // ── Mapper ────────────────────────────────────────────────────────────────────

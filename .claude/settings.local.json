@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe:*)",
+      "Bash(xargs grep:*)",
+      "Bash(jar -tf \"/c/Users/pedro/.gradle/caches/modules-2/files-2.1/org.jetbrains.exposed/exposed-core/0.44.1/e5009c3246bbc898b3dcec16196df46bae972725/exposed-core-0.44.1.jar\")",
+      "Bash(cd /tmp)",
+      "Bash(jar -xf \"/c/Users/pedro/.gradle/caches/modules-2/files-2.1/org.jetbrains.exposed/exposed-core/0.44.1/e5009c3246bbc898b3dcec16196df46bae972725/exposed-core-0.44.1.jar\")",
+      "Bash(ls *.class)",
+      "Bash(./gradlew compileKotlin)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/pedro/.jdks//**)",
+      "Bash(find /c -maxdepth 4 -name \"java.exe\")",
+      "Bash(export JAVA_HOME=\"/c/Users/pedro/.jdks/corretto-24.0.2\")",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")",
+      "Bash(java -version)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:codedthemes.gitbook.io)"
+    ]
+  }
+}

@@ -4,20 +4,18 @@ import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import br.com.madeireira.modules.venda.api.dto.VendaBalcaoRequest
 import br.com.madeireira.modules.venda.application.VendaService
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.util.UUID
 
-fun Application.vendaRoutes(service: VendaService) {
-    routing {
-        route("/api/v1/vendas") {
+fun Route.vendaRoutes(service: VendaService) {
+    route("/api/v1/vendas") {
             get {
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 50
                 val vendas = service.listarVendas(limit)
@@ -116,5 +114,4 @@ fun Application.vendaRoutes(service: VendaService) {
                 }
             }
         }
-    }
 }

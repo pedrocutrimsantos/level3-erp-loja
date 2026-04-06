@@ -6,19 +6,17 @@ import br.com.madeireira.modules.financeiro.api.dto.RegistrarSangriaRequest
 import br.com.madeireira.modules.financeiro.application.TurnoService
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.time.LocalDate
 
-fun Application.turnoRoutes(service: TurnoService) {
-    routing {
-        route("/api/v1/financeiro/turno") {
+fun Route.turnoRoutes(service: TurnoService) {
+    route("/api/v1/financeiro/turno") {
 
             // GET /api/v1/financeiro/turno?data=yyyy-MM-dd   (sem data = hoje)
             get {
@@ -90,5 +88,4 @@ fun Application.turnoRoutes(service: TurnoService) {
                 }
             }
         }
-    }
 }

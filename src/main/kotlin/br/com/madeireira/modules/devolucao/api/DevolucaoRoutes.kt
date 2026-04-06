@@ -4,19 +4,17 @@ import br.com.madeireira.modules.devolucao.api.dto.RegistrarDevolucaoRequest
 import br.com.madeireira.modules.devolucao.application.DevolucaoService
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.util.UUID
 
-fun Application.devolucaoRoutes(service: DevolucaoService) {
-    routing {
-        route("/api/v1/vendas") {
+fun Route.devolucaoRoutes(service: DevolucaoService) {
+    route("/api/v1/vendas") {
             // GET /api/v1/vendas/{id}/itens  — lista itens para o modal de devolução
             get("{id}/itens") {
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
@@ -49,5 +47,4 @@ fun Application.devolucaoRoutes(service: DevolucaoService) {
                 }
             }
         }
-    }
 }

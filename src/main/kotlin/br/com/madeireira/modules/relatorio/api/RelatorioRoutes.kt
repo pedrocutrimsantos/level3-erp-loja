@@ -2,18 +2,16 @@ package br.com.madeireira.modules.relatorio.api
 
 import br.com.madeireira.modules.relatorio.application.RelatorioService
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
-fun Application.relatorioRoutes(relatorioService: RelatorioService) {
-    routing {
-        route("/api/v1/relatorios") {
+fun Route.relatorioRoutes(relatorioService: RelatorioService) {
+    route("/api/v1/relatorios") {
 
             get("/dashboard") {
                 call.respond(relatorioService.dashboard())
@@ -49,7 +47,6 @@ fun Application.relatorioRoutes(relatorioService: RelatorioService) {
                 call.respond(relatorioService.fluxoCaixaExport(ini, fim))
             }
         }
-    }
 }
 
 private fun parsePeriodo(inicio: String?, fim: String?): Pair<LocalDate, LocalDate>? {

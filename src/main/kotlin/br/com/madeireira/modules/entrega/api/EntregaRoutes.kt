@@ -11,9 +11,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.util.UUID
 
-fun Application.entregaRoutes(service: EntregaService) {
-    routing {
-        route("/api/v1") {
+fun Route.entregaRoutes(service: EntregaService) {
+    route("/api/v1") {
             // Cria romaneio de entrega a partir de uma venda confirmada
             post("/vendas/{id}/entrega") {
                 val vendaId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
@@ -79,5 +78,4 @@ fun Application.entregaRoutes(service: EntregaService) {
                 }
             }
         }
-    }
 }

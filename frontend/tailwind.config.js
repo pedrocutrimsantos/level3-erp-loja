@@ -4,35 +4,39 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+
       colors: {
-        // ── Tokens semânticos (CSS vars com suporte a /opacity) ───────────────
+        // ── Tokens semânticos ────────────────────────────────────────────────
         background:  'rgb(var(--background)  / <alpha-value>)',
         foreground:  'rgb(var(--foreground)  / <alpha-value>)',
 
         card: {
-          DEFAULT:    'rgb(var(--card)          / <alpha-value>)',
+          DEFAULT:    'rgb(var(--card)            / <alpha-value>)',
           foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
         },
 
         muted: {
-          DEFAULT:    'rgb(var(--muted)          / <alpha-value>)',
+          DEFAULT:    'rgb(var(--muted)            / <alpha-value>)',
           foreground: 'rgb(var(--muted-foreground) / <alpha-value>)',
         },
 
-        border:     'rgb(var(--border)      / <alpha-value>)',
-        input:      'rgb(var(--input)       / <alpha-value>)',
+        border:  'rgb(var(--border) / <alpha-value>)',
+        input:   'rgb(var(--input)  / <alpha-value>)',
 
         accent: {
-          DEFAULT:    'rgb(var(--accent)          / <alpha-value>)',
+          DEFAULT:    'rgb(var(--accent)            / <alpha-value>)',
           foreground: 'rgb(var(--accent-foreground) / <alpha-value>)',
         },
 
         ring: 'rgb(var(--ring) / <alpha-value>)',
 
         chart: {
-          1:       'rgb(var(--chart-1)       / <alpha-value>)',
-          grid:    'rgb(var(--chart-grid)    / <alpha-value>)',
-          label:   'rgb(var(--chart-label)   / <alpha-value>)',
+          1:    'rgb(var(--chart-1)    / <alpha-value>)',
+          grid: 'rgb(var(--chart-grid) / <alpha-value>)',
+          label:'rgb(var(--chart-label)/ <alpha-value>)',
         },
 
         destructive: {
@@ -50,7 +54,7 @@ export default {
           foreground: 'rgb(var(--warning-fg) / <alpha-value>)',
         },
 
-        // ── Cores de marca (fixas — sidebar sempre verde escuro) ──────────────
+        // ── Cores de marca ───────────────────────────────────────────────────
         primary: {
           DEFAULT:    '#1B4332',
           foreground: '#FFFFFF',
@@ -82,10 +86,23 @@ export default {
         },
       },
 
+      // Berry border radius — cards 12px, buttons/inputs 8px
       borderRadius: {
-        lg: '0.5rem',
-        md: '0.375rem',
-        sm: '0.25rem',
+        '2xl': '1rem',    // 16px — modals
+        xl:    '0.75rem', // 12px — cards (Berry MainCard)
+        lg:    '0.5rem',  // 8px  — buttons, inputs
+        md:    '0.375rem',// 6px
+        sm:    '0.25rem', // 4px  — badges, chips
+      },
+
+      // Berry shadow scale
+      boxShadow: {
+        card:  '0 2px 14px 0 rgba(32,40,45,0.08)',
+        'card-hover': '0 4px 20px 0 rgba(32,40,45,0.14)',
+        sm:    '0 1px 4px 0 rgba(32,40,45,0.06)',
+        md:    '0 2px 8px 0 rgba(32,40,45,0.10)',
+        lg:    '0 4px 24px 0 rgba(32,40,45,0.14)',
+        xl:    '0 8px 32px 0 rgba(32,40,45,0.18)',
       },
 
       ringColor: {

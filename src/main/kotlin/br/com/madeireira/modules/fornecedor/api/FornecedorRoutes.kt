@@ -4,19 +4,17 @@ import br.com.madeireira.modules.fornecedor.application.FornecedorService
 import br.com.madeireira.modules.fornecedor.api.dto.CriarFornecedorRequest
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.util.UUID
 
-fun Application.fornecedorRoutes(service: FornecedorService) {
-    routing {
-        route("/api/v1/fornecedores") {
+fun Route.fornecedorRoutes(service: FornecedorService) {
+    route("/api/v1/fornecedores") {
             get {
                 val ativo = call.request.queryParameters["ativo"]?.let {
                     it.lowercase() != "false"
@@ -44,5 +42,4 @@ fun Application.fornecedorRoutes(service: FornecedorService) {
                 }
             }
         }
-    }
 }

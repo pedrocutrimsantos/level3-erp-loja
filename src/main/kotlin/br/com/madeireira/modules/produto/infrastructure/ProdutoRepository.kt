@@ -6,7 +6,7 @@ import br.com.madeireira.modules.produto.domain.model.Produto
 import java.util.UUID
 
 interface ProdutoRepository {
-    suspend fun findAll(ativo: Boolean? = null): List<Produto>
+    suspend fun findAll(ativo: Boolean? = null, q: String? = null): List<Produto>
     suspend fun findById(id: UUID): Produto?
     suspend fun findByCodigo(codigo: String): Produto?
     suspend fun create(produto: Produto): Produto

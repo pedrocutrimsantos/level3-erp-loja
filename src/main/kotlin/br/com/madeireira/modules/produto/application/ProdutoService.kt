@@ -26,9 +26,9 @@ import java.util.UUID
 
 class ProdutoService(private val repo: ProdutoRepository) {
 
-    suspend fun listar(apenasAtivos: Boolean = true): List<ProdutoResponse> {
+    suspend fun listar(apenasAtivos: Boolean = true, q: String? = null): List<ProdutoResponse> {
         val ativo = if (apenasAtivos) true else null
-        val produtos = repo.findAll(ativo)
+        val produtos = repo.findAll(ativo, q)
         return produtos.map { toResponse(it) }
     }
 

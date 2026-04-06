@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { nfeApi } from '@/shared/api/nfe'
+import { nfeApi, NfeXmlItemConfirmar } from '@/shared/api/nfe'
 
 export function useNfeLista() {
   return useQuery({
@@ -32,6 +32,35 @@ export function useCancelarNfe() {
       nfeApi.cancelar(id, justificativa),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['nfe'] })
+    },
+  })
+}
+
+export function useDanfe(id: string | null) {
+  return useQuery({
+    queryKey: ['nfe', 'danfe', id],
+    queryFn: () => nfeApi.danfe(id!),
+    enabled: !!id,
+  })
+}
+
+export function usePreviewXml() {
+  return useMutation({
+    mutationFn: (file: File) => nfeApi.previewXml(file),
+  })
+}
+
+export function useImportarXml() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: {
+      chaveAcesso: string | null
+      emitenteCnpj: string
+      emitenteNome: string
+      itens: NfeXmlItemConfirmar[]
+    }) => nfeApi.importarXml(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['estoque'] })
     },
   })
 }

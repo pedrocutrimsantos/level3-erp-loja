@@ -15,11 +15,18 @@ class ProdutoRepositoryImpl : ProdutoRepository {
     // Produto
     // -------------------------------------------------------------------------
 
-    override suspend fun findAll(ativo: Boolean?): List<Produto> = dbQuery {
+    override suspend fun findAll(ativo: Boolean?, q: String?): List<Produto> = dbQuery {
         val query = ProdutoTable
             .join(UnidadeMedidaTable, JoinType.INNER, ProdutoTable.unidadeMedidaId, UnidadeMedidaTable.id)
             .selectAll()
         if (ativo != null) query.andWhere { ProdutoTable.ativo eq ativo }
+        if (!q.isNullOrBlank()) {
+            val termo = "%${q.trim().lowercase()}%"
+            query.andWhere {
+                (LowerCase(ProdutoTable.descricao) like termo) or
+                (LowerCase(ProdutoTable.codigo) like termo)
+            }
+        }
         query.map { toProduto(it) }
     }
 

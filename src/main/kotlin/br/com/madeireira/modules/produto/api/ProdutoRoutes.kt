@@ -8,22 +8,20 @@ import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import br.com.madeireira.modules.produto.api.dto.SalvarPrecificacaoRequest
 import br.com.madeireira.modules.produto.application.ProdutoService
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
 import java.util.UUID
 
-fun Application.produtoRoutes(service: ProdutoService) {
-    routing {
-        route("/api/v1/produtos") {
+fun Route.produtoRoutes(service: ProdutoService) {
+    route("/api/v1/produtos") {
 
             // GET /api/v1/produtos/unidades
             get("unidades") {
@@ -31,11 +29,12 @@ fun Application.produtoRoutes(service: ProdutoService) {
                 call.respond(HttpStatusCode.OK, unidades)
             }
 
-            // GET /api/v1/produtos?ativo=true|false
+            // GET /api/v1/produtos?ativo=true|false&q=termo
             get {
                 val ativoParam = call.request.queryParameters["ativo"]
                 val apenasAtivos = ativoParam?.lowercase() != "false"
-                val produtos = service.listar(apenasAtivos)
+                val q = call.request.queryParameters["q"]?.takeIf { it.isNotBlank() }
+                val produtos = service.listar(apenasAtivos, q)
                 call.respond(HttpStatusCode.OK, produtos)
             }
 
@@ -201,7 +200,6 @@ fun Application.produtoRoutes(service: ProdutoService) {
                 }
             }
         }
-    }
 }
 
 private fun parseUUID(value: String?): UUID? =

@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@/shared/utils/cn'
 
-export type BadgeVariant = 'default' | 'success' | 'warning' | 'destructive' | 'outline'
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'destructive' | 'outline' | 'info'
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant
@@ -10,22 +10,24 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 const variantClasses: Record<BadgeVariant, string> = {
   default:
-    'bg-primary/10 text-primary border-transparent dark:bg-[#243040] dark:text-[#4ade80] dark:border-[#243040]',
+    'bg-primary/10 text-primary dark:bg-[#1B4332]/40 dark:text-[#4ade80]',
+  info:
+    'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   success:
-    'bg-success/10 text-success border-transparent dark:bg-[#4ade80]/15 dark:text-[#4ade80]',
+    'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-[#4ade80]',
   warning:
-    'bg-warning/10 text-warning border-transparent dark:bg-[#fbbf24]/15 dark:text-[#fbbf24]',
+    'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-[#fbbf24]',
   destructive:
-    'bg-destructive/10 text-destructive border-transparent dark:bg-[#f87171]/15 dark:text-[#f87171]',
+    'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-[#f87171]',
   outline:
-    'bg-transparent text-foreground border-border dark:text-[#e2e8f0] dark:border-[#243040]',
+    'bg-transparent border border-border text-foreground dark:border-[#243040] dark:text-[#e2e8f0]',
 }
 
 export function Badge({ variant = 'default', className, children, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors',
+        'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold',
         variantClasses[variant],
         className
       )}

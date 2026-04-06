@@ -3,6 +3,8 @@ import {
   estoqueApi,
   type AjusteEstoqueRequest,
 } from '@/shared/api/estoque'
+import { useToast } from '@/shared/store/toastStore'
+import { erroMsg } from '@/shared/utils/erroMsg'
 
 export function useSaldoEstoque(produtoId: string | null) {
   return useQuery({
@@ -38,11 +40,13 @@ export function useMovimentacoesGeral(params?: { produtoId?: string; tipo?: stri
 
 export function useRegistrarAjuste() {
   const qc = useQueryClient()
+  const toast = useToast()
   return useMutation({
     mutationFn: (req: AjusteEstoqueRequest) => estoqueApi.registrarAjuste(req),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['estoque'] })
       qc.invalidateQueries({ queryKey: ['produtos'] })
     },
+    onError: (err) => toast.erro(erroMsg(err, 'Erro ao registrar ajuste de estoque.')),
   })
 }

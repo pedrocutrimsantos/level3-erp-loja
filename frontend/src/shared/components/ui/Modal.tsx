@@ -16,12 +16,12 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
   return (
     <Dialog.Root open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
           className={cn(
             'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
-            'flex flex-col max-h-[90dvh] rounded-lg border border-border bg-card text-card-foreground shadow-xl',
-            'dark:bg-[#161d27] dark:border-[#243040] dark:text-[#e2e8f0]',
+            'flex flex-col max-h-[90dvh] rounded-2xl bg-card text-card-foreground shadow-xl overflow-hidden',
+            'dark:bg-[#161d27] dark:text-[#e2e8f0]',
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -31,13 +31,13 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
           )}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <Dialog.Title className="text-lg font-semibold text-foreground">
+          <div className="flex items-center justify-between bg-muted/50 border-b border-border px-6 py-4 dark:bg-[#1c2636] dark:border-[#243040]">
+            <Dialog.Title className="text-base font-semibold text-foreground dark:text-[#e2e8f0]">
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring dark:hover:bg-[#243040]"
                 aria-label="Fechar"
               >
                 <X className="h-4 w-4" />
@@ -46,13 +46,13 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="flex-1 overflow-y-auto px-6 py-5">
             {children}
           </div>
 
           {/* Footer */}
           {footer && (
-            <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
+            <div className="flex items-center justify-end gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:border-[#243040] dark:bg-[#1c2636]/50">
               {footer}
             </div>
           )}
