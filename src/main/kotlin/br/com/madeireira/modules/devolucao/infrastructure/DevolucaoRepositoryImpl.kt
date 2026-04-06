@@ -1,8 +1,10 @@
 package br.com.madeireira.modules.devolucao.infrastructure
 
 import br.com.madeireira.infrastructure.database.DatabaseConfig.dbQuery
+import br.com.madeireira.modules.cliente.infrastructure.ClienteTable
 import br.com.madeireira.modules.devolucao.domain.model.Devolucao
 import br.com.madeireira.modules.devolucao.domain.model.ItemDevolucao
+import br.com.madeireira.modules.venda.infrastructure.VendaTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.Instant
@@ -48,6 +50,27 @@ class DevolucaoRepositoryImpl : DevolucaoRepository {
             .orderBy(DevolucaoTable.createdAt, SortOrder.DESC)
             .limit(limit)
             .map { toDevolucao(it) }
+    }
+
+    override suspend fun findAllComVenda(limit: Int): List<DevolucaoListRow> = dbQuery {
+        DevolucaoTable
+            .join(VendaTable,   JoinType.INNER, DevolucaoTable.vendaId,  VendaTable.id)
+            .join(ClienteTable, JoinType.LEFT,  VendaTable.clienteId,    ClienteTable.id)
+            .selectAll()
+            .orderBy(DevolucaoTable.createdAt, SortOrder.DESC)
+            .limit(limit)
+            .map { row ->
+                DevolucaoListRow(
+                    id          = row[DevolucaoTable.id],
+                    numero      = row[DevolucaoTable.numero],
+                    vendaId     = row[DevolucaoTable.vendaId],
+                    vendaNumero = row[VendaTable.numero],
+                    clienteNome = row.getOrNull(ClienteTable.razaoSocial),
+                    motivo      = row[DevolucaoTable.motivo],
+                    valorTotal  = row[DevolucaoTable.valorTotal],
+                    createdAt   = row[DevolucaoTable.createdAt],
+                )
+            }
     }
 
     private fun toDevolucao(row: ResultRow) = Devolucao(

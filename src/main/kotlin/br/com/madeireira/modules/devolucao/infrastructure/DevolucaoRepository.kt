@@ -9,4 +9,16 @@ interface DevolucaoRepository {
     suspend fun criarItem(item: ItemDevolucao): ItemDevolucao
     suspend fun findByVendaId(vendaId: UUID): List<Devolucao>
     suspend fun findAll(limit: Int): List<Devolucao>
+    suspend fun findAllComVenda(limit: Int): List<DevolucaoListRow>
 }
+
+data class DevolucaoListRow(
+    val id: java.util.UUID,
+    val numero: String,
+    val vendaId: java.util.UUID,
+    val vendaNumero: String,
+    val clienteNome: String?,
+    val motivo: String?,
+    val valorTotal: java.math.BigDecimal,
+    val createdAt: kotlinx.datetime.Instant,
+)

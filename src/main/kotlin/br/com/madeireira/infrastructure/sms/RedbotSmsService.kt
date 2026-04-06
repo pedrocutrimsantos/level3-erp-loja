@@ -13,7 +13,13 @@ class RedbotWhatsAppService(
 ) {
     suspend fun enviar(telefone: String, mensagem: String) {
         val numero = normalizar(telefone)
-        val body   = """{"key":"$key","destinatario":"$numero","mensagem":"${mensagem.replace("\"", "\\\"")}"}"""
+        val msgEscapada = mensagem
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+        val body = """{"key":"$key","destinatario":"$numero","mensagem":"$msgEscapada"}"""
         client.post(url) {
             contentType(ContentType.Application.Json)
             setBody(body)
@@ -27,9 +33,12 @@ class RedbotWhatsAppService(
     }
 
     companion object {
-        fun fromEnv(client: HttpClient): RedbotWhatsAppService? {
-            val url = System.getenv("REDBOT_URL") ?: "https://redbot.redoctopus.com.br/send"
-            val key = System.getenv("REDBOT_KEY") ?: return null
+        private const val DEFAULT_KEY = "HcKH9V67HAfiWmec4vSsyp"
+        private const val DEFAULT_URL = "https://redbot.redoctopus.com.br/send"
+
+        fun fromEnv(client: HttpClient): RedbotWhatsAppService {
+            val url = System.getenv("REDBOT_URL") ?: DEFAULT_URL
+            val key = System.getenv("REDBOT_KEY") ?: DEFAULT_KEY
             return RedbotWhatsAppService(client, url, key)
         }
     }

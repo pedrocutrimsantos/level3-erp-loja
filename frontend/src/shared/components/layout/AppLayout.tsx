@@ -63,7 +63,8 @@ const navGroups: NavGroup[] = [
     items: [
       { label: 'Balcão',     to: '/vendas/balcao',     iconColor: 'text-emerald-400', icon: <ShoppingCart className="h-4 w-4" /> },
       { label: 'Histórico',  to: '/vendas/historico',  iconColor: 'text-green-400',   icon: <History      className="h-4 w-4" /> },
-      { label: 'Orçamentos', to: '/vendas/orcamentos', iconColor: 'text-teal-400',    icon: <FileText     className="h-4 w-4" /> },
+      { label: 'Orçamentos', to: '/vendas/orcamentos',  iconColor: 'text-teal-400',    icon: <FileText     className="h-4 w-4" /> },
+      { label: 'Devoluções', to: '/vendas/devolucoes', iconColor: 'text-rose-400',    icon: <ArrowLeftRight className="h-4 w-4" /> },
       { label: 'Entregas',   to: '/entregas',          iconColor: 'text-sky-400',     icon: <Truck        className="h-4 w-4" /> },
     ],
   },
@@ -106,7 +107,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Configurações',
     items: [
-      { label: 'Usuários', to: '/configuracoes/usuarios', iconColor: 'text-slate-400', icon: <Users2 className="h-4 w-4" /> },
+      { label: 'Empresa',  to: '/configuracoes/empresa',  iconColor: 'text-slate-400',  icon: <Building2 className="h-4 w-4" /> },
+      { label: 'Usuários', to: '/configuracoes/usuarios', iconColor: 'text-zinc-400',   icon: <Users2    className="h-4 w-4" /> },
     ],
   },
 ]

@@ -2,11 +2,17 @@ package br.com.madeireira.modules.tenant.application
 
 import br.com.madeireira.infrastructure.database.DatabaseConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.datetime.toJavaInstant
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.update
 import org.mindrot.jbcrypt.BCrypt
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 private object TenantTable : Table("public.tenant") {
@@ -14,10 +20,23 @@ private object TenantTable : Table("public.tenant") {
     val slug         = varchar("slug", 50)
     val razaoSocial  = varchar("razao_social", 150)
     val cnpj         = varchar("cnpj", 18)
-    val tenantSchema = varchar("schema_name", 63)  // "schemaName" conflita com Table.schemaName
+    val tenantSchema = varchar("schema_name", 63)
     val ativo        = bool("ativo")
+    val createdAt    = timestamp("created_at")
     override val primaryKey = PrimaryKey(id)
 }
+
+private val isoFmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+data class TenantItem(
+    val id:          String,
+    val slug:        String,
+    val razaoSocial: String,
+    val cnpj:        String,
+    val schemaName:  String,
+    val ativo:       Boolean,
+    val createdAt:   String,
+)
 
 data class NovoTenantRequest(
     val slug:         String,
@@ -89,5 +108,26 @@ class TenantProvisioner {
             schemaName  = schemaName,
             adminUserId = adminId.toString(),
         )
+    }
+
+    suspend fun listar(): List<TenantItem> = newSuspendedTransaction(Dispatchers.IO) {
+        TenantTable.selectAll()
+            .orderBy(TenantTable.createdAt)
+            .map {
+                TenantItem(
+                    id          = it[TenantTable.id].toString(),
+                    slug        = it[TenantTable.slug],
+                    razaoSocial = it[TenantTable.razaoSocial],
+                    cnpj        = it[TenantTable.cnpj],
+                    schemaName  = it[TenantTable.tenantSchema],
+                    ativo       = it[TenantTable.ativo],
+                    createdAt   = it[TenantTable.createdAt].toJavaInstant()
+                        .atOffset(ZoneOffset.UTC).toLocalDateTime().format(isoFmt),
+                )
+            }
+    }
+
+    suspend fun setAtivo(id: UUID, ativo: Boolean) = newSuspendedTransaction(Dispatchers.IO) {
+        TenantTable.update({ TenantTable.id eq id }) { it[TenantTable.ativo] = ativo }
     }
 }

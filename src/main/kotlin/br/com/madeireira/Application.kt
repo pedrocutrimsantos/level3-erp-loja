@@ -30,6 +30,8 @@ import br.com.madeireira.modules.financeiro.application.TituloService
 import br.com.madeireira.modules.financeiro.application.TurnoService
 import br.com.madeireira.modules.financeiro.infrastructure.TituloRepositoryImpl
 import br.com.madeireira.modules.financeiro.infrastructure.TurnoRepositoryImpl
+import br.com.madeireira.modules.empresa.api.empresaRoutes
+import br.com.madeireira.modules.empresa.infrastructure.EmpresaRepositoryImpl
 import br.com.madeireira.modules.fiscal.api.nfeRoutes
 import br.com.madeireira.modules.fiscal.application.NfeService
 import br.com.madeireira.modules.fiscal.application.NfEmissaoStub
@@ -176,6 +178,8 @@ fun Application.module() {
     val nfEmissor            = FocusNFeConfig.fromEnv()?.let { FocusNFeAdapter(it) } ?: NfEmissaoStub()
     val nfeService           = NfeService(nfRepository, vendaRepository, produtoRepository, vendaService, compraService, nfEmissor, clienteRepository)
 
+    val empresaRepository    = EmpresaRepositoryImpl()
+
     val usuarioRepository    = UsuarioRepositoryImpl()
     val usuarioService       = UsuarioService(usuarioRepository)
 
@@ -222,6 +226,7 @@ fun Application.module() {
             nfeRoutes(nfeService)
             relatorioRoutes(RelatorioService())
             usuarioRoutes(usuarioService)
+            empresaRoutes(empresaRepository)
         }
     }
 }

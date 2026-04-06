@@ -2,10 +2,13 @@ import React, { Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/shared/components/layout/AppLayout'
 import { useAuthStore } from '@/shared/store/authStore'
+import { useAdminStore } from '@/modules/admin/store/adminStore'
 
-const LoginPage         = React.lazy(() => import('@/modules/auth/pages/LoginPage'))
-const EsqueciSenhaPage  = React.lazy(() => import('@/modules/auth/pages/EsqueciSenhaPage'))
+const LoginPage          = React.lazy(() => import('@/modules/auth/pages/LoginPage'))
+const EsqueciSenhaPage   = React.lazy(() => import('@/modules/auth/pages/EsqueciSenhaPage'))
 const RedefinirSenhaPage = React.lazy(() => import('@/modules/auth/pages/RedefinirSenhaPage'))
+const AdminLoginPage     = React.lazy(() => import('@/modules/admin/pages/AdminLoginPage'))
+const TenantsPage        = React.lazy(() => import('@/modules/admin/pages/TenantsPage'))
 
 const ProdutoListPage     = React.lazy(() => import('@/modules/produto/pages/ProdutoListPage'))
 const ProdutoFormPage     = React.lazy(() => import('@/modules/produto/pages/ProdutoFormPage'))
@@ -20,6 +23,7 @@ const ClienteDetalhePage  = React.lazy(() => import('@/modules/cliente/pages/Cli
 const ComprasPage         = React.lazy(() => import('@/modules/compra/pages/ComprasPage'))
 const MovimentacoesPage   = React.lazy(() => import('@/modules/estoque/pages/MovimentacoesPage'))
 const OrcamentosPage      = React.lazy(() => import('@/modules/venda/pages/OrcamentosPage'))
+const DevolucoesPage      = React.lazy(() => import('@/modules/venda/pages/DevolucoesPage'))
 const TitulosPage         = React.lazy(() => import('@/modules/financeiro/pages/TitulosPage'))
 const CaixaPage           = React.lazy(() => import('@/modules/financeiro/pages/CaixaPage'))
 const FluxoCaixaPage      = React.lazy(() => import('@/modules/financeiro/pages/FluxoCaixaPage'))
@@ -31,6 +35,7 @@ const FornecedoresPage    = React.lazy(() => import('@/modules/fornecedor/pages/
 const EntregasPage        = React.lazy(() => import('@/modules/entrega/pages/EntregasPage'))
 const PrecosPage          = React.lazy(() => import('@/modules/produto/pages/PrecosPage'))
 const UsuariosPage        = React.lazy(() => import('@/modules/usuario/pages/UsuariosPage'))
+const EmpresaPage         = React.lazy(() => import('@/modules/empresa/pages/EmpresaPage'))
 
 function PageFallback() {
   return (
@@ -46,15 +51,27 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />
 }
 
+/** Redireciona para /admin se não tiver a chave de admin. */
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAdminStore((s) => s.isAuthenticated)
+  return isAuthenticated() ? <>{children}</> : <Navigate to="/admin" replace />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Suspense fallback={<PageFallback />}>
         <Routes>
           {/* Rotas públicas */}
-          <Route path="/login"          element={<LoginPage />} />
-          <Route path="/esqueci-senha"  element={<EsqueciSenhaPage />} />
+          <Route path="/login"           element={<LoginPage />} />
+          <Route path="/esqueci-senha"   element={<EsqueciSenhaPage />} />
           <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
+
+          {/* Painel super-admin — autenticação independente */}
+          <Route path="/admin" element={<AdminLoginPage />} />
+          <Route path="/admin/tenants" element={
+            <AdminRoute><TenantsPage /></AdminRoute>
+          } />
 
           {/* DANFE — fullscreen sem AppLayout */}
           <Route
@@ -87,6 +104,7 @@ export default function App() {
                       <Route path="/vendas/balcao"          element={<VendaBalcaoPage />} />
                       <Route path="/vendas/historico"       element={<VendaHistoricoPage />} />
                       <Route path="/vendas/orcamentos"      element={<OrcamentosPage />} />
+                      <Route path="/vendas/devolucoes"      element={<DevolucoesPage />} />
                       <Route path="/clientes"               element={<ClienteListPage />} />
                       <Route path="/clientes/novo"          element={<ClienteFormPage />} />
                       <Route path="/clientes/:id"           element={<ClienteDetalhePage />} />
@@ -97,6 +115,7 @@ export default function App() {
                       <Route path="/financeiro/caixa"       element={<CaixaPage />} />
                       <Route path="/financeiro/titulos"     element={<TitulosPage />} />
                       <Route path="/financeiro/fluxo-caixa" element={<FluxoCaixaPage />} />
+                      <Route path="/configuracoes/empresa"  element={<EmpresaPage />} />
                       <Route path="/configuracoes/usuarios" element={<UsuariosPage />} />
                     </Routes>
                   </Suspense>

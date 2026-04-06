@@ -13,7 +13,7 @@ import java.security.SecureRandom
 
 class AuthService(
     private val repo: AuthRepository,
-    private val sms: RedbotWhatsAppService? = null,
+    private val sms: RedbotWhatsAppService,
 ) {
 
     suspend fun login(req: LoginRequest, tenantSlug: String): LoginResponse {
@@ -71,10 +71,9 @@ class AuthService(
 
         // Envia por SMS se o usuário tiver telefone cadastrado
         val telefone  = usuario.telefone
-        val smsClient: RedbotWhatsAppService? = sms
-        if (smsClient != null && !telefone.isNullOrBlank()) {
+        if (!telefone.isNullOrBlank()) {
             runCatching {
-                smsClient.enviar(telefone, "Madex\nCódigo de recuperação de senha: *$token*\nVálido por 1 hora.")
+                sms.enviar(telefone, "Madex\nCódigo de recuperação de senha: *$token*\nVálido por 1 hora.")
             }
         }
 

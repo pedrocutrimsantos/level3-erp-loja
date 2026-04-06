@@ -18,6 +18,15 @@ export function useRegistrarDevolucao() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vendas'] })
       qc.invalidateQueries({ queryKey: ['estoque'] })
+      qc.invalidateQueries({ queryKey: ['devolucoes'] })
     },
+  })
+}
+
+export function useDevolucoes(limit = 200) {
+  return useQuery({
+    queryKey: ['devolucoes', limit],
+    queryFn: () => devolucoesApi.listar(limit),
+    staleTime: 30_000,
   })
 }

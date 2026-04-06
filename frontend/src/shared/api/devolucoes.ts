@@ -43,10 +43,24 @@ export interface DevolucaoResponse {
   itens: ItemDevolucaoResponse[]
 }
 
+export interface DevolucaoListItem {
+  id: string
+  numero: string
+  vendaId: string
+  vendaNumero: string
+  clienteNome: string | null
+  motivo: string | null
+  valorTotal: string
+  createdAt: string
+}
+
 export const devolucoesApi = {
   buscarItens: (vendaId: string) =>
     api.get<ItemVendaDetalhe[]>(`/vendas/${vendaId}/itens`).then((r) => r.data),
 
   registrar: (vendaId: string, req: RegistrarDevolucaoRequest) =>
     api.post<DevolucaoResponse>(`/vendas/${vendaId}/devolver`, req).then((r) => r.data),
+
+  listar: (limit = 200) =>
+    api.get<DevolucaoListItem[]>('/devolucoes', { params: { limit } }).then((r) => r.data),
 }

@@ -49,3 +49,15 @@ data class ItemDevolucaoResponse(
     val quantidadeUnidade: String?,
     val valorDevolvido: String,
 )
+
+@Serializable
+data class DevolucaoListItemResponse(
+    val id: String,
+    val numero: String,
+    val vendaId: String,
+    val vendaNumero: String,
+    val clienteNome: String?,
+    val motivo: String?,
+    val valorTotal: String,
+    val createdAt: String,
+)

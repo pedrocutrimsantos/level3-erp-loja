@@ -5,6 +5,7 @@ import br.com.madeireira.modules.devolucao.api.dto.*
 import br.com.madeireira.modules.devolucao.domain.model.Devolucao
 import br.com.madeireira.modules.devolucao.domain.model.ItemDevolucao
 import br.com.madeireira.modules.devolucao.infrastructure.DevolucaoRepository
+import br.com.madeireira.modules.devolucao.infrastructure.DevolucaoListRow
 import br.com.madeireira.modules.estoque.domain.model.MovimentacaoEstoque
 import br.com.madeireira.modules.estoque.infrastructure.EstoqueRepository
 import br.com.madeireira.modules.produto.domain.model.TipoProduto
@@ -24,6 +25,21 @@ class DevolucaoService(
     private val estoqueRepo: EstoqueRepository,
     private val produtoRepo: ProdutoRepository,
 ) {
+    /** Lista todas as devoluções com número da venda e cliente. */
+    suspend fun listarTodas(limit: Int = 200): List<DevolucaoListItemResponse> =
+        devolucaoRepo.findAllComVenda(limit).map { row ->
+            DevolucaoListItemResponse(
+                id          = row.id.toString(),
+                numero      = row.numero,
+                vendaId     = row.vendaId.toString(),
+                vendaNumero = row.vendaNumero,
+                clienteNome = row.clienteNome,
+                motivo      = row.motivo,
+                valorTotal  = row.valorTotal.toPlainString(),
+                createdAt   = row.createdAt.toString(),
+            )
+        }
+
     /** Retorna os itens de uma venda com detalhes de produto — alimenta o modal. */
     suspend fun buscarItensVenda(vendaId: UUID): List<ItemVendaDetalheResponse> {
         vendaRepo.findVendaById(vendaId)

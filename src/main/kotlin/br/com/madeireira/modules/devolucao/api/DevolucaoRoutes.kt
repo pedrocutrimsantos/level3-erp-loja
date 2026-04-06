@@ -14,6 +14,15 @@ import io.ktor.server.routing.route
 import java.util.UUID
 
 fun Route.devolucaoRoutes(service: DevolucaoService) {
+
+    // GET /api/v1/devolucoes  — lista todas as devoluções
+    route("/api/v1/devolucoes") {
+        get {
+            val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 200
+            call.respond(HttpStatusCode.OK, service.listarTodas(limit))
+        }
+    }
+
     route("/api/v1/vendas") {
             // GET /api/v1/vendas/{id}/itens  — lista itens para o modal de devolução
             get("{id}/itens") {
