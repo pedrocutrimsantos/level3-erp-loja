@@ -4,6 +4,7 @@ export interface UsuarioResponse {
   id: string
   nome: string
   email: string
+  telefone: string | null
   perfilCodigo: string
   perfilDescricao: string
   vendedor: boolean
@@ -24,6 +25,7 @@ export interface CriarUsuarioDto {
   senha: string
   perfilCodigo: string
   vendedor?: boolean
+  telefone?: string
 }
 
 export interface AtualizarUsuarioDto {
@@ -32,6 +34,7 @@ export interface AtualizarUsuarioDto {
   senha?: string
   perfilCodigo?: string
   vendedor?: boolean
+  telefone?: string
 }
 
 export const usuariosApi = {

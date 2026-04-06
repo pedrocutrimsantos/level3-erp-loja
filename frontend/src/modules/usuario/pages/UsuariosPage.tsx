@@ -43,6 +43,7 @@ function TableSkeleton() {
 interface UsuarioFormValues {
   nome: string
   email: string
+  telefone: string
   senha: string
   perfilCodigo: string
   vendedor: boolean
@@ -62,6 +63,7 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
   const [form, setForm] = useState<UsuarioFormValues>({
     nome: editando?.nome ?? '',
     email: editando?.email ?? '',
+    telefone: editando?.telefone ?? '',
     senha: '',
     perfilCodigo: editando?.perfilCodigo ?? (perfis[0]?.codigo ?? ''),
     vendedor: editando?.vendedor ?? false,
@@ -72,6 +74,7 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
     setForm({
       nome: editando?.nome ?? '',
       email: editando?.email ?? '',
+      telefone: editando?.telefone ?? '',
       senha: '',
       perfilCodigo: editando?.perfilCodigo ?? (perfis[0]?.codigo ?? ''),
       vendedor: editando?.vendedor ?? false,
@@ -92,6 +95,7 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
             senha: form.senha || undefined,
             perfilCodigo: form.perfilCodigo || undefined,
             vendedor: form.vendedor,
+            telefone: form.telefone || undefined,
           },
         },
         { onSuccess: onClose },
@@ -104,6 +108,7 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
           senha: form.senha,
           perfilCodigo: form.perfilCodigo,
           vendedor: form.vendedor,
+          telefone: form.telefone || undefined,
         },
         { onSuccess: onClose },
       )
@@ -150,6 +155,21 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             placeholder="usuario@empresa.com"
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-foreground">
+            Telefone / WhatsApp
+          </label>
+          <Input
+            type="tel"
+            value={form.telefone}
+            onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))}
+            placeholder="(98) 99999-0000"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Usado para envio do código de recuperação de senha
+          </p>
         </div>
 
         <div>

@@ -3,6 +3,9 @@ package br.com.madeireira
 import br.com.madeireira.core.auth.JwtConfig
 import br.com.madeireira.core.auth.TenantSchema
 import br.com.madeireira.infrastructure.database.DatabaseConfig
+import br.com.madeireira.infrastructure.sms.RedbotWhatsAppService
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import br.com.madeireira.modules.auth.api.authRoutes
 import br.com.madeireira.modules.auth.application.AuthService
 import br.com.madeireira.modules.auth.infrastructure.AuthRepository
@@ -176,7 +179,9 @@ fun Application.module() {
     val usuarioRepository    = UsuarioRepositoryImpl()
     val usuarioService       = UsuarioService(usuarioRepository)
 
-    val authService          = AuthService(AuthRepository())
+    val smsHttpClient        = HttpClient(CIO)
+    val redbotSms            = RedbotWhatsAppService.fromEnv(smsHttpClient)
+    val authService          = AuthService(AuthRepository(), redbotSms)
     val tenantProvisioner    = TenantProvisioner()
 
     // ── Rotas ────────────────────────────────────────────────────────────────

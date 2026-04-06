@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Layers } from 'lucide-react'
 import { authApi } from '@/shared/api/auth'
 import { useAuthStore } from '@/shared/store/authStore'
@@ -96,6 +96,15 @@ export default function LoginPage() {
           >
             {loading ? 'Entrando…' : 'Entrar'}
           </button>
+
+          <div className="text-center">
+            <Link
+              to="/esqueci-senha"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
         </form>
       </div>
     </div>

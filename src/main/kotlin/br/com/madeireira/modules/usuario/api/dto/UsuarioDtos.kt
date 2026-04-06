@@ -7,6 +7,7 @@ data class UsuarioResponse(
     val id: String,
     val nome: String,
     val email: String,
+    val telefone: String?,
     val perfilCodigo: String,
     val perfilDescricao: String,
     val vendedor: Boolean,
@@ -22,6 +23,7 @@ data class CriarUsuarioDto(
     val senha: String,
     val perfilCodigo: String,
     val vendedor: Boolean = false,
+    val telefone: String? = null,
 )
 
 @Serializable
@@ -31,6 +33,7 @@ data class AtualizarUsuarioDto(
     val senha: String? = null,
     val perfilCodigo: String? = null,
     val vendedor: Boolean? = null,
+    val telefone: String? = null,
 )
 
 @Serializable

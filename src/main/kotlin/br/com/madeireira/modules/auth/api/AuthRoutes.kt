@@ -15,6 +15,11 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import kotlinx.serialization.Serializable
+
+@Serializable private data class SolicitarResetRequest(val email: String)
+@Serializable private data class ConfirmarResetRequest(val token: String, val novaSenha: String)
+@Serializable private data class AlterarSenhaRequest(val senhaAtual: String, val novaSenha: String)
 
 /** Extrai o slug do tenant a partir do subdomínio do Host header.
  *  Ex.: "piloto.seuapp.com" → "piloto"
@@ -51,7 +56,37 @@ fun Route.authRoutes(authService: AuthService) {
             }
         }
 
-        // GET /api/v1/auth/me — requer JWT
+        // POST /api/v1/auth/solicitar-reset — público
+        post("solicitar-reset") {
+            val req = try { call.receive<SolicitarResetRequest>() } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
+                return@post
+            }
+            try {
+                val slug  = tenantSlugFromHost(call.request.headers["Host"])
+                val token = authService.solicitarReset(req.email, slug)
+                call.respond(HttpStatusCode.OK, mapOf("token" to token))
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.OK, mapOf("token" to "")) // não revela erros
+            }
+        }
+
+        // POST /api/v1/auth/confirmar-reset — público
+        post("confirmar-reset") {
+            val req = try { call.receive<ConfirmarResetRequest>() } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
+                return@post
+            }
+            try {
+                val slug = tenantSlugFromHost(call.request.headers["Host"])
+                authService.confirmarReset(req.token, req.novaSenha, slug)
+                call.respond(HttpStatusCode.OK, mapOf("ok" to true))
+            } catch (e: IllegalArgumentException) {
+                call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro", e.message))
+            }
+        }
+
+        // GET /api/v1/auth/me + POST alterar-senha — requer JWT
         authenticate("jwt") {
             get("me") {
                 val principal = call.principal<JWTPrincipal>()!!
@@ -66,6 +101,25 @@ fun Route.authRoutes(authService: AuthService) {
                         tenant = payload.getClaim("tenant").asString() ?: "",
                     )
                 )
+            }
+
+            // POST /api/v1/auth/alterar-senha
+            post("alterar-senha") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId    = principal.payload.subject
+                val slug      = principal.payload.getClaim("tenant").asString() ?: ""
+                val req = try { call.receive<AlterarSenhaRequest>() } catch (e: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
+                    return@post
+                }
+                try {
+                    authService.alterarSenha(userId, req.senhaAtual, req.novaSenha, slug)
+                    call.respond(HttpStatusCode.OK, mapOf("ok" to true))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro", e.message))
+                } catch (e: NoSuchElementException) {
+                    call.respond(HttpStatusCode.NotFound, ErroResponse("Usuário não encontrado"))
+                }
             }
         }
     }

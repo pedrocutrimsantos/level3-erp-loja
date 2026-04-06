@@ -27,6 +27,7 @@ private object UsuarioTable : Table("usuario") {
     val nome         = varchar("nome", 120)
     val email        = varchar("email", 120)
     val senhaHash    = varchar("senha_hash", 255)
+    val telefone     = varchar("telefone", 20).nullable()
     val perfilId     = uuid("perfil_id")
     val vendedor     = bool("vendedor")
     val ativo        = bool("ativo")
@@ -86,6 +87,7 @@ class UsuarioRepositoryImpl : UsuarioRepository {
             it[nome]      = req.nome.trim()
             it[email]     = req.email.trim().lowercase()
             it[senhaHash] = hash
+            it[telefone]  = req.telefone?.filter { c -> c.isDigit() }?.takeIf { t -> t.isNotEmpty() }
             it[this.perfilId] = perfilId
             it[vendedor]  = req.vendedor
             it[ativo]     = true
@@ -111,6 +113,7 @@ class UsuarioRepositoryImpl : UsuarioRepository {
             if (req.senha != null)        stmt[senhaHash] = BCrypt.hashpw(req.senha, BCrypt.gensalt(12))
             if (perfilId != null)         stmt[this.perfilId] = perfilId
             if (req.vendedor != null)     stmt[vendedor] = req.vendedor
+            if (req.telefone != null)     stmt[telefone] = req.telefone.filter { it.isDigit() }.takeIf { it.isNotEmpty() }
         }
 
         UsuarioTable
@@ -159,6 +162,7 @@ class UsuarioRepositoryImpl : UsuarioRepository {
             id              = row[UsuarioTable.id],
             nome            = row[UsuarioTable.nome],
             email           = row[UsuarioTable.email],
+            telefone        = row[UsuarioTable.telefone],
             perfilId        = row[UsuarioTable.perfilId],
             perfilCodigo    = row[PerfilTable.codigo],
             perfilDescricao = row[PerfilTable.descricao],

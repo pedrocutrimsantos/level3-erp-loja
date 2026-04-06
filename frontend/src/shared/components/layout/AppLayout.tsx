@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Toaster } from '@/shared/components/ui/Toaster'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -27,10 +27,12 @@ import {
   MoreHorizontal,
   LogOut,
   User,
+  KeyRound,
 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { useTheme } from '@/shared/theme/ThemeContext'
 import { useAuthStore } from '@/shared/store/authStore'
+import { AlterarSenhaModal } from '@/modules/auth/components/AlterarSenhaModal'
 
 const APP_VERSION = '0.1.0'
 
@@ -183,10 +185,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [alterarSenhaOpen, setAlterarSenhaOpen] = useState(false)
   const { collapsed, toggle } = useCollapsedGroups()
   const location = useLocation()
   const navigate  = useNavigate()
   const { logout, nome } = useAuthStore()
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
   function handleLogout() {
     logout()
@@ -196,7 +201,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     setDrawerOpen(false)
     setMoreSheetOpen(false)
+    setUserMenuOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (!userMenuOpen) return
+    function handleClick(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [userMenuOpen])
 
   useEffect(() => {
     document.body.style.overflow = (drawerOpen || moreSheetOpen) ? 'hidden' : ''
@@ -264,35 +281,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Divider */}
       <div className="mx-4 h-px bg-white/10" />
 
-      {/* Rodapé: usuário + ações */}
-      <div className="px-3 py-3 space-y-0.5">
-        {nome && (
-          <div className="flex items-center gap-2 px-3 py-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15">
-              <User className="h-3.5 w-3.5 text-white" />
-            </div>
-            <p className="truncate text-xs font-medium text-primary-200 select-none" title={nome}>
-              {nome}
-            </p>
-          </div>
-        )}
-        <button
-          onClick={toggleTheme}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-200/80 transition-all hover:bg-white/8 hover:text-white"
-        >
-          {theme === 'dark'
-            ? <Sun  className="h-4 w-4 shrink-0 text-primary-300" />
-            : <Moon className="h-4 w-4 shrink-0 text-primary-300" />}
-          {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-        </button>
-        <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-200/80 transition-all hover:bg-red-500/15 hover:text-red-300"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          Sair
-        </button>
-        <p className="px-3 pt-1 text-[10px] text-primary-400/50 select-none">v{APP_VERSION}</p>
+      {/* Rodapé: versão */}
+      <div className="px-3 py-3">
+        <p className="px-3 text-[10px] text-primary-400/50 select-none">v{APP_VERSION}</p>
       </div>
     </div>
   )
@@ -339,13 +330,39 @@ export function AppLayout({ children }: AppLayoutProps) {
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             {nome && (
-              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 dark:bg-[#1c2636]">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 dark:bg-primary-800">
-                  <User className="h-3.5 w-3.5 text-primary dark:text-primary-300" />
-                </div>
-                <span className="text-xs font-medium text-foreground dark:text-[#e2e8f0] max-w-[120px] truncate">
-                  {nome}
-                </span>
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 dark:bg-[#1c2636] hover:bg-muted/80 transition-colors"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 dark:bg-primary-800">
+                    <User className="h-3.5 w-3.5 text-primary dark:text-primary-300" />
+                  </div>
+                  <span className="text-xs font-medium text-foreground dark:text-[#e2e8f0] max-w-[120px] truncate">
+                    {nome}
+                  </span>
+                  <ChevronDown className={cn('h-3 w-3 text-muted-foreground transition-transform', userMenuOpen && 'rotate-180')} />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-card shadow-lg dark:bg-[#161d27] dark:border-[#243040] z-50 overflow-hidden">
+                    <button
+                      onClick={() => { setUserMenuOpen(false); setAlterarSenhaOpen(true) }}
+                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted dark:hover:bg-[#243040] transition-colors"
+                    >
+                      <KeyRound className="h-4 w-4 text-muted-foreground" />
+                      Alterar senha
+                    </button>
+                    <div className="h-px bg-border dark:bg-[#243040]" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -359,8 +376,22 @@ export function AppLayout({ children }: AppLayoutProps) {
               Madex <span className="font-normal opacity-50 text-xs">by Level3</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground select-none">v{APP_VERSION}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground select-none mr-1">v{APP_VERSION}</span>
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
             <button
               onClick={() => setDrawerOpen(true)}
               className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -448,22 +479,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             )
           })}
 
-          <div className="border-t border-border pt-3 mt-2 space-y-0.5 dark:border-[#243040]">
-            <button
-              onClick={toggleTheme}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors dark:text-[#94a3b8] dark:hover:bg-[#243040]"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              Sair
-            </button>
-          </div>
         </div>
       </div>
 
@@ -505,6 +520,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </button>
       </nav>
     </div>
+    <AlterarSenhaModal open={alterarSenhaOpen} onClose={() => setAlterarSenhaOpen(false)} />
     <Toaster />
     </>
   )

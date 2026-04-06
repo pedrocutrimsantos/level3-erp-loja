@@ -40,4 +40,5 @@ data class UsuarioAuth(
     val senhaHash: String,
     val ativo:     Boolean,
     val perfil:    String,
+    val telefone:  String? = null,
 )

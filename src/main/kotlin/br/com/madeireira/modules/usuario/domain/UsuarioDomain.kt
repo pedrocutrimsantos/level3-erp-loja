@@ -6,6 +6,7 @@ data class UsuarioListItem(
     val id: UUID,
     val nome: String,
     val email: String,
+    val telefone: String?,
     val perfilId: UUID,
     val perfilCodigo: String,
     val perfilDescricao: String,
@@ -21,6 +22,7 @@ data class CriarUsuarioRequest(
     val senha: String,
     val perfilCodigo: String,
     val vendedor: Boolean = false,
+    val telefone: String? = null,
 )
 
 data class AtualizarUsuarioRequest(
@@ -29,6 +31,7 @@ data class AtualizarUsuarioRequest(
     val senha: String?,
     val perfilCodigo: String?,
     val vendedor: Boolean?,
+    val telefone: String? = null,
 )
 
 data class PerfilSimples(

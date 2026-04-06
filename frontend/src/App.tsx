@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/shared/components/layout/AppLayout'
 import { useAuthStore } from '@/shared/store/authStore'
 
-const LoginPage = React.lazy(() => import('@/modules/auth/pages/LoginPage'))
+const LoginPage         = React.lazy(() => import('@/modules/auth/pages/LoginPage'))
+const EsqueciSenhaPage  = React.lazy(() => import('@/modules/auth/pages/EsqueciSenhaPage'))
+const RedefinirSenhaPage = React.lazy(() => import('@/modules/auth/pages/RedefinirSenhaPage'))
 
 const ProdutoListPage     = React.lazy(() => import('@/modules/produto/pages/ProdutoListPage'))
 const ProdutoFormPage     = React.lazy(() => import('@/modules/produto/pages/ProdutoFormPage'))
@@ -49,8 +51,10 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<PageFallback />}>
         <Routes>
-          {/* Rota pública */}
-          <Route path="/login" element={<LoginPage />} />
+          {/* Rotas públicas */}
+          <Route path="/login"          element={<LoginPage />} />
+          <Route path="/esqueci-senha"  element={<EsqueciSenhaPage />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
 
           {/* DANFE — fullscreen sem AppLayout */}
           <Route

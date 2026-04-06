@@ -34,6 +34,7 @@ class UsuarioService(private val repo: UsuarioRepository) {
             senha       = dto.senha,
             perfilCodigo = dto.perfilCodigo,
             vendedor    = dto.vendedor,
+            telefone    = dto.telefone,
         )
         return toResponse(repo.criar(req))
     }
@@ -61,6 +62,7 @@ class UsuarioService(private val repo: UsuarioRepository) {
             senha       = dto.senha,
             perfilCodigo = dto.perfilCodigo,
             vendedor    = dto.vendedor,
+            telefone    = dto.telefone,
         )
         return toResponse(repo.atualizar(id, req))
     }
@@ -83,6 +85,7 @@ class UsuarioService(private val repo: UsuarioRepository) {
         id              = u.id.toString(),
         nome            = u.nome,
         email           = u.email,
+        telefone        = u.telefone,
         perfilCodigo    = u.perfilCodigo,
         perfilDescricao = u.perfilDescricao,
         vendedor        = u.vendedor,

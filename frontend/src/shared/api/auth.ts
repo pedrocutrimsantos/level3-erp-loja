@@ -27,4 +27,13 @@ export const authApi = {
 
   me: () =>
     api.get<MeResponse>('/auth/me').then((r) => r.data),
+
+  solicitarReset: (email: string) =>
+    api.post<{ token: string }>('/auth/solicitar-reset', { email }).then((r) => r.data),
+
+  confirmarReset: (token: string, novaSenha: string) =>
+    api.post<{ ok: boolean }>('/auth/confirmar-reset', { token, novaSenha }).then((r) => r.data),
+
+  alterarSenha: (senhaAtual: string, novaSenha: string) =>
+    api.post<{ ok: boolean }>('/auth/alterar-senha', { senhaAtual, novaSenha }).then((r) => r.data),
 }
