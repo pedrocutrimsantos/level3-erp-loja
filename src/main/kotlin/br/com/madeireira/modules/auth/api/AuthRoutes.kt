@@ -22,11 +22,19 @@ import kotlinx.serialization.Serializable
 @Serializable private data class AlterarSenhaRequest(val senhaAtual: String, val novaSenha: String)
 
 /** Extrai o slug do tenant a partir do subdomínio do Host header.
- *  Ex.: "piloto.seuapp.com" → "piloto"
- *  Fallback para dev local (localhost / IP / domínio sem subdomínio): env DEFAULT_TENANT ou "piloto".
+ *  A detecção por subdomínio só ativa quando USE_SUBDOMAIN_TENANT=true.
+ *  Por padrão (Railway, dev local, domínio sem subdomínio) usa DEFAULT_TENANT ou "piloto".
+ *
+ *  Com USE_SUBDOMAIN_TENANT=true:
+ *    "piloto.madex.com.br" → "piloto"
+ *
+ *  Sem USE_SUBDOMAIN_TENANT (padrão):
+ *    qualquer host → DEFAULT_TENANT (ou "piloto")
  */
 private fun tenantSlugFromHost(host: String?): String {
-    val defaultSlug = System.getenv("DEFAULT_TENANT") ?: "piloto"
+    val defaultSlug    = System.getenv("DEFAULT_TENANT")        ?: "piloto"
+    val useSubdomain   = System.getenv("USE_SUBDOMAIN_TENANT") == "true"
+    if (!useSubdomain) return defaultSlug
     if (host.isNullOrBlank()) return defaultSlug
     val hostname = host.substringBefore(":") // remove porta
     val parts    = hostname.split(".")
