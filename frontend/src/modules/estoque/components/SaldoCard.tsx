@@ -44,10 +44,17 @@ export function SaldoCard({ produtoId, tipo }: SaldoCardProps) {
   )
 }
 
-function MadeiraSaldo({ saldo }: { saldo: NonNullable<ReturnType<typeof useSaldoEstoque>['data']> }) {
+function MadeiraSaldo({
+  saldo,
+}: {
+  saldo: NonNullable<ReturnType<typeof useSaldoEstoque>['data']>
+}) {
   const saldoNum = parseFloat(saldo.saldoM3)
   const statusVariant = saldoNum <= 0 ? 'destructive' as const : 'success' as const
   const statusLabel = saldoNum <= 0 ? 'Sem estoque' : 'Em estoque'
+
+  const metrosLineares = saldo.saldoMetrosLineares != null ? parseFloat(saldo.saldoMetrosLineares) : null
+  const pecas = saldo.saldoPecas ?? null
 
   return (
     <div className="space-y-3">
@@ -59,13 +66,28 @@ function MadeiraSaldo({ saldo }: { saldo: NonNullable<ReturnType<typeof useSaldo
         <Badge variant={statusVariant}>{statusLabel}</Badge>
       </div>
 
-      {saldo.saldoMetrosLineares != null && (
+      {metrosLineares != null && (
         <p className="text-sm text-muted-foreground">
           ≈{' '}
           <span className="font-medium text-gray-700">
-            {formatarMetros(parseFloat(saldo.saldoMetrosLineares))}
+            {formatarMetros(metrosLineares)}
           </span>{' '}
           metros lineares
+        </p>
+      )}
+
+      {pecas != null && (
+        <p className="text-sm text-muted-foreground">
+          ≈{' '}
+          <span className="font-semibold text-foreground">
+            {pecas.toLocaleString('pt-BR')}
+          </span>{' '}
+          {pecas === 1 ? 'peça' : 'peças'}
+          {saldo.comprimentoPecaM && (
+            <span className="ml-1 text-xs opacity-60">
+              ({saldo.comprimentoPecaM} m/peça)
+            </span>
+          )}
         </p>
       )}
 

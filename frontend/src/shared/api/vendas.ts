@@ -13,6 +13,7 @@ export interface VendaBalcaoRequest {
   clienteId?: string
   formaPagamento?: string
   dataVencimentoFiado?: string
+  numeroParcelas?: number
   observacao?: string
 }
 

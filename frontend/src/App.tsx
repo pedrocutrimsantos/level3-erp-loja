@@ -25,6 +25,7 @@ const MovimentacoesPage   = React.lazy(() => import('@/modules/estoque/pages/Mov
 const OrcamentosPage      = React.lazy(() => import('@/modules/venda/pages/OrcamentosPage'))
 const DevolucoesPage      = React.lazy(() => import('@/modules/venda/pages/DevolucoesPage'))
 const TitulosPage         = React.lazy(() => import('@/modules/financeiro/pages/TitulosPage'))
+const ContasPagarPage     = React.lazy(() => import('@/modules/financeiro/pages/ContasPagarPage'))
 const CaixaPage           = React.lazy(() => import('@/modules/financeiro/pages/CaixaPage'))
 const FluxoCaixaPage      = React.lazy(() => import('@/modules/financeiro/pages/FluxoCaixaPage'))
 const DashboardPage       = React.lazy(() => import('@/modules/relatorio/pages/DashboardPage'))
@@ -112,9 +113,10 @@ export default function App() {
                       <Route path="/fiscal/nfe"             element={<NfePage />} />
                       <Route path="/fornecedores"           element={<FornecedoresPage />} />
                       <Route path="/entregas"               element={<EntregasPage />} />
-                      <Route path="/financeiro/caixa"       element={<CaixaPage />} />
-                      <Route path="/financeiro/titulos"     element={<TitulosPage />} />
-                      <Route path="/financeiro/fluxo-caixa" element={<FluxoCaixaPage />} />
+                      <Route path="/financeiro/caixa"         element={<CaixaPage />} />
+                      <Route path="/financeiro/titulos"       element={<TitulosPage />} />
+                      <Route path="/financeiro/contas-pagar"  element={<ContasPagarPage />} />
+                      <Route path="/financeiro/fluxo-caixa"   element={<FluxoCaixaPage />} />
                       <Route path="/configuracoes/empresa"  element={<EmpresaPage />} />
                       <Route path="/configuracoes/usuarios" element={<UsuariosPage />} />
                     </Routes>

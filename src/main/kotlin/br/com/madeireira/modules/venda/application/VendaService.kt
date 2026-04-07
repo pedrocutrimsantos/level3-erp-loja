@@ -295,11 +295,23 @@ class VendaService(
                 runCatching { LocalDate.parse(it) }.getOrNull()
             } ?: LocalDate.now().plusDays(30)
             tituloService?.criarParaVendaFiado(
-                vendaId       = vendaId,
-                vendaNumero   = numero,
-                clienteId     = clienteId,
-                valorTotal    = valorTotal,
+                vendaId        = vendaId,
+                vendaNumero    = numero,
+                clienteId      = clienteId,
+                valorTotal     = valorTotal,
                 dataVencimento = vencimento,
+            )
+        }
+
+        // Criar título a receber parcelado para vendas com CARTÃO DE CRÉDITO (>1x)
+        val nParcelas = req.numeroParcelas ?: 1
+        if (req.formaPagamento?.uppercase() == "CARTAO_CREDITO" && nParcelas > 1) {
+            tituloService?.criarParaVendaCredito(
+                vendaId        = vendaId,
+                vendaNumero    = numero,
+                clienteId      = clienteId,
+                valorTotal     = valorTotal,
+                numeroParcelas = nParcelas,
             )
         }
 

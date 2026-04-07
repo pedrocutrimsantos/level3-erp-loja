@@ -7,6 +7,8 @@ data class SaldoResponse(
     val produtoId: String,
     val saldoM3: String,               // para MADEIRA (4 casas decimais)
     val saldoMetrosLineares: String?,  // para MADEIRA com dimensão
+    val saldoPecas: Int?,              // para MADEIRA com comprimentoPecaM configurado
+    val comprimentoPecaM: String?,     // comprimento da peça em metros (null = sem modo peça)
     val saldoUnidade: String?,         // para NORMAL (quantidade na unidade de venda)
     val unidadeSigla: String?,         // sigla da unidade de venda para NORMAL ("KG", "UN", "M"…)
     val custoMedioM3: String?,

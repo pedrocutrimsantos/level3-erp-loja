@@ -4,6 +4,8 @@ export interface SaldoResponse {
   produtoId: string
   saldoM3: string                    // para MADEIRA
   saldoMetrosLineares: string | null // para MADEIRA com dimensão
+  saldoPecas: number | null          // para MADEIRA com comprimentoPecaM configurado
+  comprimentoPecaM: string | null    // comprimento da peça em metros
   saldoUnidade: string | null        // para NORMAL (em unidade nativa)
   unidadeSigla: string | null        // sigla da unidade para NORMAL ("KG", "UN"…)
   custoMedioM3: string | null

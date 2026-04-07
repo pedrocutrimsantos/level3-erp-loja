@@ -34,10 +34,15 @@ class EstoqueService(
             val metrosLineares = dimensao?.let {
                 ConversionEngine.m3ParaLinear(saldo.saldoM3Disponivel, it.fatorConversao)
             }
+            val saldoPecas = if (produto.comprimentoPecaM != null && produto.comprimentoPecaM > 0 && metrosLineares != null) {
+                (metrosLineares / produto.comprimentoPecaM.toBigDecimal()).toInt()
+            } else null
             SaldoResponse(
                 produtoId             = produtoId.toString(),
                 saldoM3               = saldo.saldoM3Disponivel.setScale(4, RoundingMode.HALF_UP).toPlainString(),
                 saldoMetrosLineares   = metrosLineares?.toPlainString(),
+                saldoPecas            = saldoPecas,
+                comprimentoPecaM      = produto.comprimentoPecaM?.toBigDecimal()?.toPlainString(),
                 saldoUnidade          = null,
                 unidadeSigla          = null,
                 custoMedioM3          = saldo.custoMedioM3?.setScale(4, RoundingMode.HALF_UP)?.toPlainString(),
@@ -48,6 +53,8 @@ class EstoqueService(
                 produtoId             = produtoId.toString(),
                 saldoM3               = "0.0000",
                 saldoMetrosLineares   = null,
+                saldoPecas            = null,
+                comprimentoPecaM      = null,
                 saldoUnidade          = saldo.saldoUnidadeDisponivel.setScale(4, RoundingMode.HALF_UP).toPlainString(),
                 unidadeSigla          = produto.unidadeVendaSigla,
                 custoMedioM3          = null,

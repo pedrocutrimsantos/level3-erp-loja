@@ -5,8 +5,10 @@ export interface TituloResponse {
   numero: string
   descricao: string | null
   tipo: 'RECEBER' | 'PAGAR'
+  categoria: string | null
   clienteNome: string | null
   fornecedorNome: string | null
+  fornecedorId: string | null
   vendaNumero: string | null
   valorOriginal: string
   valorPago: string
@@ -16,17 +18,30 @@ export interface TituloResponse {
   dataVencimento: string | null
   dataPagamento: string | null
   formaPagamento: string | null
+  numeroParcelas: number
+  parcelasPagas: number
 }
 
 export interface CriarDespesaRequest {
   descricao: string
   valor: string
   dataVencimento: string
+  fornecedorId?: string
+  categoria?: string
+  numeroParcelas?: number
+  intervaloDiasParcelas?: number
 }
 
 export interface BaixaTituloRequest {
   formaPagamento: string
   dataPagamento?: string
+}
+
+export interface ResumoPagarResponse {
+  totalAberto: string
+  totalVencido: string
+  totalVenceHoje: string
+  totalVenceSemana: string
 }
 
 export interface LancamentoFluxo {
@@ -58,6 +73,12 @@ export const titulosApi = {
 
   registrarBaixa: (id: string, req: BaixaTituloRequest) =>
     api.post<TituloResponse>(`/titulos/${id}/baixa`, req).then((r) => r.data),
+
+  cancelar: (id: string) =>
+    api.post<TituloResponse>(`/titulos/${id}/cancelar`).then((r) => r.data),
+
+  resumoPagar: () =>
+    api.get<ResumoPagarResponse>('/financeiro/resumo-pagar').then((r) => r.data),
 
   fluxoCaixa: (dias = 30) =>
     api.get<FluxoCaixaResponse>('/financeiro/fluxo-caixa', { params: { dias } }).then((r) => r.data),

@@ -25,6 +25,7 @@ class TituloRepositoryImpl : TituloRepository {
             it[compraId]      = titulo.compraId
             it[clienteId]     = titulo.clienteId
             it[fornecedorId]  = titulo.fornecedorId
+            it[categoria]     = titulo.categoria
             it[valorOriginal] = titulo.valorOriginal
             it[valorPago]     = titulo.valorPago
             it[status]        = titulo.status
@@ -94,6 +95,45 @@ class TituloRepositoryImpl : TituloRepository {
         parcela
     }
 
+    override suspend fun cancelarParcelas(tituloId: UUID): Unit = dbQuery {
+        ParcelaFinanceiraTable.update({ ParcelaFinanceiraTable.tituloId eq tituloId }) {
+            it[status] = StatusParcela.CANCELADO
+        }
+    }
+
+    override suspend fun sumParcelasAbertasPagar(ate: LocalDate): Map<String, java.math.BigDecimal> = dbQuery {
+        // Calcula limite antes do bloco select para evitar conflito com SqlExpressionBuilder.plus
+        val limite      = ate.plusDays(365).toKotlinLocalDate()
+        val statusAbertos = listOf(StatusParcela.ABERTO, StatusParcela.VENCIDO)
+
+        val rows = (ParcelaFinanceiraTable innerJoin TituloFinanceiroTable)
+            .select {
+                (TituloFinanceiroTable.tipo eq TipoTitulo.PAGAR) and
+                (ParcelaFinanceiraTable.status inList statusAbertos) and
+                (ParcelaFinanceiraTable.dataVencimento lessEq limite)
+            }
+            .map { row ->
+                Pair(
+                    row[ParcelaFinanceiraTable.dataVencimento].toJavaLocalDate(),
+                    row[ParcelaFinanceiraTable.valor],
+                )
+            }
+
+        val seteDias = ate.plusDays(7)
+
+        val vencido   = rows.filter { it.first.isBefore(ate) }.sumOf { it.second }
+        val hojeTotal = rows.filter { it.first == ate }.sumOf { it.second }
+        val semana    = rows.filter { !it.first.isBefore(ate) && !it.first.isAfter(seteDias) }.sumOf { it.second }
+        val total     = rows.sumOf { it.second }
+
+        mapOf(
+            "total"   to total,
+            "vencido" to vencido,
+            "hoje"    to hojeTotal,
+            "semana"  to semana,
+        )
+    }
+
     override suspend fun findParcelasAbertasNoPeriodo(
         dataInicio: LocalDate,
         dataFim: LocalDate,
@@ -132,6 +172,7 @@ class TituloRepositoryImpl : TituloRepository {
         compraId      = row[TituloFinanceiroTable.compraId],
         clienteId     = row[TituloFinanceiroTable.clienteId],
         fornecedorId  = row[TituloFinanceiroTable.fornecedorId],
+        categoria     = row[TituloFinanceiroTable.categoria],
         valorOriginal = row[TituloFinanceiroTable.valorOriginal],
         valorPago     = row[TituloFinanceiroTable.valorPago],
         status        = row[TituloFinanceiroTable.status],

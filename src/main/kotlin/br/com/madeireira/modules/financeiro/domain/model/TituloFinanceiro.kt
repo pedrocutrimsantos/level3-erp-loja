@@ -14,6 +14,7 @@ data class TituloFinanceiro(
     val compraId: UUID?,
     val clienteId: UUID?,
     val fornecedorId: UUID?,
+    val categoria: String? = null,
     val valorOriginal: BigDecimal,
     val valorPago: BigDecimal,
     val status: StatusTitulo,

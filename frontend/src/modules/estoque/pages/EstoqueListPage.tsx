@@ -72,7 +72,14 @@ function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
           isLoading ? (
             <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
           ) : saldoMetros != null ? (
-            <span className="text-gray-700">{formatarMetros(saldoMetros)} m</span>
+            <span className="text-gray-700">
+              {formatarMetros(saldoMetros)} m
+              {saldo?.saldoPecas != null && (
+                <span className="ml-1.5 text-xs font-medium text-foreground">
+                  ({saldo.saldoPecas.toLocaleString('pt-BR')} peças)
+                </span>
+              )}
+            </span>
           ) : (
             <span className="text-muted-foreground">—</span>
           )

@@ -3,6 +3,7 @@ package br.com.madeireira.modules.financeiro.api
 import br.com.madeireira.modules.financeiro.api.dto.BaixaTituloRequest
 import br.com.madeireira.modules.financeiro.api.dto.CriarDespesaRequest
 import br.com.madeireira.modules.financeiro.application.TituloService
+import io.ktor.server.routing.delete
 import br.com.madeireira.modules.financeiro.domain.model.StatusTitulo
 import br.com.madeireira.modules.financeiro.domain.model.TipoTitulo
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
@@ -21,6 +22,11 @@ fun Route.tituloRoutes(service: TituloService) {
         get("/api/v1/financeiro/fluxo-caixa") {
             val dias = call.request.queryParameters["dias"]?.toIntOrNull()?.coerceIn(1, 365) ?: 30
             call.respond(HttpStatusCode.OK, service.fluxoCaixa(dias))
+        }
+
+        // GET /api/v1/financeiro/resumo-pagar
+        get("/api/v1/financeiro/resumo-pagar") {
+            call.respond(HttpStatusCode.OK, service.resumoPagar())
         }
 
         route("/api/v1/titulos") {
@@ -46,6 +52,21 @@ fun Route.tituloRoutes(service: TituloService) {
                 val status = call.request.queryParameters["status"]?.let { runCatching { StatusTitulo.valueOf(it) }.getOrNull() }
                 val limit  = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 100
                 call.respond(HttpStatusCode.OK, service.listar(tipo, status, limit))
+            }
+
+            // POST /api/v1/titulos/:id/cancelar
+            post("{id}/cancelar") {
+                val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: run {
+                    call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
+                    return@post
+                }
+                try {
+                    call.respond(HttpStatusCode.OK, service.cancelarTitulo(id))
+                } catch (e: NoSuchElementException) {
+                    call.respond(HttpStatusCode.NotFound, ErroResponse("Não encontrado", e.message))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro de validação", e.message))
+                }
             }
 
             // POST /api/v1/titulos/:id/baixa

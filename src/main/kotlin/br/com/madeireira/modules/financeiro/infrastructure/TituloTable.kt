@@ -23,6 +23,7 @@ object TituloFinanceiroTable : Table("titulo_financeiro") {
     val compraId      = uuid("compra_id").nullable()
     val clienteId     = uuid("cliente_id").nullable()
     val fornecedorId  = uuid("fornecedor_id").nullable()
+    val categoria     = varchar("categoria", 40).nullable()
     val valorOriginal = decimal("valor_original", 14, 2)
     val valorPago     = decimal("valor_pago", 14, 2)
     val status        = customEnumeration(

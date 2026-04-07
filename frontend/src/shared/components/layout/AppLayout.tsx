@@ -99,9 +99,10 @@ const navGroups: NavGroup[] = [
   {
     label: 'Financeiro',
     items: [
-      { label: 'Caixa',          to: '/financeiro/caixa',       iconColor: 'text-emerald-400', icon: <Wallet        className="h-4 w-4" /> },
-      { label: 'Títulos',        to: '/financeiro/titulos',     iconColor: 'text-blue-400',    icon: <CreditCard    className="h-4 w-4" /> },
-      { label: 'Fluxo de Caixa', to: '/financeiro/fluxo-caixa',iconColor: 'text-cyan-400',    icon: <CalendarClock className="h-4 w-4" /> },
+      { label: 'Caixa',          to: '/financeiro/caixa',         iconColor: 'text-emerald-400', icon: <Wallet        className="h-4 w-4" /> },
+      { label: 'Contas a Pagar', to: '/financeiro/contas-pagar',  iconColor: 'text-red-400',     icon: <CreditCard    className="h-4 w-4" /> },
+      { label: 'Títulos',        to: '/financeiro/titulos',       iconColor: 'text-blue-400',    icon: <CreditCard    className="h-4 w-4" /> },
+      { label: 'Fluxo de Caixa', to: '/financeiro/fluxo-caixa',  iconColor: 'text-cyan-400',    icon: <CalendarClock className="h-4 w-4" /> },
     ],
   },
   {

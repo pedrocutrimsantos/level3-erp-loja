@@ -17,6 +17,7 @@ data class VendaBalcaoRequest(
     val clienteId: String? = null,
     val formaPagamento: String? = null,    // DINHEIRO | PIX | CARTAO_DEBITO | CARTAO_CREDITO | FIADO | …
     val dataVencimentoFiado: String? = null, // ISO date yyyy-MM-dd (só para FIADO)
+    val numeroParcelas: Int? = null,         // 1..12 (só para CARTAO_CREDITO)
     val observacao: String? = null,
 )
 

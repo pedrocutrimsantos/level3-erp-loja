@@ -16,5 +16,7 @@ interface TituloRepository {
     suspend fun findParcelasByTituloId(tituloId: UUID): List<ParcelaFinanceira>
     suspend fun updateTitulo(titulo: TituloFinanceiro): TituloFinanceiro
     suspend fun updateParcela(parcela: ParcelaFinanceira): ParcelaFinanceira
+    suspend fun cancelarParcelas(tituloId: UUID)
     suspend fun findParcelasAbertasNoPeriodo(dataInicio: LocalDate, dataFim: LocalDate): List<ParcelaComTitulo>
+    suspend fun sumParcelasAbertasPagar(ate: LocalDate): Map<String, java.math.BigDecimal>
 }

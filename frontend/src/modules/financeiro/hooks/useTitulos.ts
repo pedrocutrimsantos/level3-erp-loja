@@ -15,6 +15,14 @@ export function useFluxoCaixa(dias = 30) {
   })
 }
 
+export function useResumoPagar() {
+  return useQuery({
+    queryKey: ['resumo-pagar'],
+    queryFn: () => titulosApi.resumoPagar(),
+    staleTime: 60_000,
+  })
+}
+
 export function useCriarDespesa() {
   const qc = useQueryClient()
   return useMutation({
@@ -22,6 +30,7 @@ export function useCriarDespesa() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['titulos'] })
       qc.invalidateQueries({ queryKey: ['fluxo-caixa'] })
+      qc.invalidateQueries({ queryKey: ['resumo-pagar'] })
     },
   })
 }
@@ -34,6 +43,18 @@ export function useBaixaTitulo() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['titulos'] })
       qc.invalidateQueries({ queryKey: ['fluxo-caixa'] })
+      qc.invalidateQueries({ queryKey: ['resumo-pagar'] })
+    },
+  })
+}
+
+export function useCancelarTitulo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => titulosApi.cancelar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['titulos'] })
+      qc.invalidateQueries({ queryKey: ['resumo-pagar'] })
     },
   })
 }

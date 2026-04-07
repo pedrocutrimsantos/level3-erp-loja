@@ -1,9 +1,10 @@
-import React from 'react'
-import { X } from 'lucide-react'
+import React, { useState } from 'react'
+import { X, RotateCcw } from 'lucide-react'
 import { Button } from '@/shared/components/ui/Button'
 import { Badge } from '@/shared/components/ui/Badge'
 import { vendasApi } from '@/shared/api/vendas'
 import { useQuery } from '@tanstack/react-query'
+import { DevolucaoModal } from './DevolucaoModal'
 
 interface Props {
   vendaId: string
@@ -44,6 +45,10 @@ const FORMA_LABEL: Record<string, string> = {
   FIADO:          'Fiado',
 }
 
+const PODE_DEVOLVER = new Set([
+  'CONFIRMADO', 'CONCLUIDO', 'EM_ENTREGA', 'ENTREGUE_PARCIAL', 'DEVOLVIDO_PARCIAL',
+])
+
 const TIPO_LABEL: Record<string, string> = {
   BALCAO:      'Balcão',
   COM_ENTREGA: 'Com Entrega',
@@ -81,6 +86,17 @@ export function VendaDetalheModal({ vendaId, onClose }: Props) {
     queryKey: ['venda-detalhe', vendaId],
     queryFn: () => vendasApi.buscar(vendaId),
   })
+  const [showDevolucao, setShowDevolucao] = useState(false)
+
+  if (showDevolucao && venda) {
+    return (
+      <DevolucaoModal
+        vendaId={vendaId}
+        vendaNumero={venda.numero}
+        onClose={() => setShowDevolucao(false)}
+      />
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -98,9 +114,17 @@ export function VendaDetalheModal({ vendaId, onClose }: Props) {
               </Badge>
             )}
           </div>
-          <Button size="sm" variant="ghost" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {venda && PODE_DEVOLVER.has(venda.status) && (
+              <Button size="sm" variant="outline" onClick={() => setShowDevolucao(true)}>
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Devolver
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Body */}
