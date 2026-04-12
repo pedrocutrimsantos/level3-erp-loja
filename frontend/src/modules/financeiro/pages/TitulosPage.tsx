@@ -274,21 +274,24 @@ export default function TitulosPage() {
         subtitle="Contas a receber e a pagar"
       />
 
-      {/* Abas tipo */}
-      <div className="mb-4 flex gap-2">
-        {(['RECEBER', 'PAGAR'] as TabTipo[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTabTipo(t)}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              tabTipo === t
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-card border border-border text-foreground hover:bg-muted/50'
-            }`}
-          >
-            {t === 'RECEBER' ? 'A Receber' : 'A Pagar'}
-          </button>
-        ))}
+      {/* Barra de abas + ações */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {/* Abas de tipo */}
+        <div className="flex rounded-lg border border-border dark:border-[#243040] overflow-hidden">
+          {(['RECEBER', 'PAGAR'] as TabTipo[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTabTipo(t)}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                tabTipo === t
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card dark:bg-[#161d27] text-foreground dark:text-[#e2e8f0] hover:bg-muted/60 dark:hover:bg-[#243040]'
+              }`}
+            >
+              {t === 'RECEBER' ? 'A Receber' : 'A Pagar'}
+            </button>
+          ))}
+        </div>
 
         {tabTipo === 'PAGAR' && (
           <Button
@@ -302,15 +305,16 @@ export default function TitulosPage() {
           </Button>
         )}
 
-        <div className="ml-auto flex gap-2">
+        {/* Filtro de status — alinhado à direita */}
+        <div className="ml-auto flex rounded-lg border border-border dark:border-[#243040] overflow-hidden">
           {(['ABERTO', 'TODOS'] as TabStatus[]).map((s) => (
             <button
               key={s}
               onClick={() => setTabStatus(s)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 tabStatus === s
-                  ? 'bg-foreground text-background'
-                  : 'bg-card border border-border text-muted-foreground hover:bg-muted/50'
+                  ? 'bg-foreground dark:bg-[#e2e8f0] text-background dark:text-[#0d1117]'
+                  : 'bg-card dark:bg-[#161d27] text-muted-foreground hover:bg-muted/50 dark:hover:bg-[#243040]'
               }`}
             >
               {s === 'ABERTO' ? 'Somente abertos' : 'Todos'}

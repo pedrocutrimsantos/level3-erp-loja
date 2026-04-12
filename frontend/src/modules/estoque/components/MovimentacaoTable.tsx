@@ -72,7 +72,7 @@ export function MovimentacaoTable({ movimentacoes }: MovimentacaoTableProps) {
 
           return (
             <TableRow key={mov.id}>
-              <TableCell className="whitespace-nowrap text-sm text-gray-700">
+              <TableCell className="whitespace-nowrap text-sm text-foreground/80">
                 {formatarDataHora(mov.dataHora)}
               </TableCell>
               <TableCell>
@@ -98,7 +98,7 @@ export function MovimentacaoTable({ movimentacoes }: MovimentacaoTableProps) {
                   <span className="text-muted-foreground">—</span>
                 )}
               </TableCell>
-              <TableCell className="tabular-nums text-sm text-gray-700">
+              <TableCell className="tabular-nums text-sm text-foreground/80">
                 {isMadeira && antes != null && depois != null ? (
                   <span>
                     {formatarM3(antes)} m³{' '}

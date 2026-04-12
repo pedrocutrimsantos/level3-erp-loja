@@ -44,6 +44,23 @@ fun Route.nfeRoutes(nfeService: NfeService) {
             call.respond(nfeService.cancelar(id, req.justificativa))
         }
 
+        // ── Reprocessamento de NF AGUARDANDO ─────────────────────────────────
+        // Re-consulta o status na SEFAZ para NF-e que ficaram
+        // travadas em AGUARDANDO por timeout no polling da emissão original.
+        post("/{id}/reprocessar") {
+            val id = runCatching { UUID.fromString(call.parameters["id"]) }.getOrElse {
+                call.respond(HttpStatusCode.BadRequest, ErroResponse("id inválido"))
+                return@post
+            }
+            try {
+                call.respond(nfeService.reprocessar(id))
+            } catch (e: IllegalStateException) {
+                call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse(e.message ?: "Erro"))
+            } catch (e: NoSuchElementException) {
+                call.respond(HttpStatusCode.NotFound, ErroResponse("NF não encontrada"))
+            }
+        }
+
         // ── DANFE ─────────────────────────────────────────────────────────────
 
         get("/{id}/danfe") {

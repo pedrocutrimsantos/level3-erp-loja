@@ -16,3 +16,20 @@ export function useSalvarEmpresa() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['empresa'] }),
   })
 }
+
+export function useUploadCertificado() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ certificadoBase64, senha }: { certificadoBase64: string; senha: string }) =>
+      empresaApi.uploadCertificado(certificadoBase64, senha),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['empresa'] }),
+  })
+}
+
+export function useRemoverCertificado() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: empresaApi.removerCertificado,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['empresa'] }),
+  })
+}

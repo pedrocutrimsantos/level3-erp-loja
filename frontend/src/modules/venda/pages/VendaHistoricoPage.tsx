@@ -13,6 +13,8 @@ import { Button } from '@/shared/components/ui/Button'
 import { Input } from '@/shared/components/ui/Input'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { History, Printer, X } from 'lucide-react'
+import { PageHeader } from '@/shared/components/layout/PageHeader'
+import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
 import { DevolucaoModal } from '../components/DevolucaoModal'
 import { CriarEntregaModal } from '../components/CriarEntregaModal'
 import { VendaDetalheModal } from '../components/VendaDetalheModal'
@@ -136,87 +138,73 @@ export default function VendaHistoricoPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Histórico de Vendas</h1>
-        <p className="text-sm text-muted-foreground">Últimas 200 vendas registradas</p>
-      </div>
+      <PageHeader
+        title="Histórico de Vendas"
+        subtitle="Últimas 200 vendas registradas"
+      />
 
       {/* ── Barra de filtros ── */}
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
-        {/* Busca texto */}
-        <div className="flex-1 min-w-[180px]">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Número ou cliente
-          </label>
+      <FilterBar>
+        <FilterField label="Número ou cliente" className="flex-1 min-w-[180px]">
           <Input
             placeholder="Ex: V-001 ou João Silva"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="h-8 text-sm"
           />
-        </div>
+        </FilterField>
 
-        {/* Status */}
-        <div className="w-44">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Status
-          </label>
+        <FilterField label="Status" className="w-44">
           <select
             value={statusFiltro}
             onChange={(e) => setStatusFiltro(e.target.value)}
-            className="h-8 w-full rounded-md border border-border bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-[#0d1117] dark:border-[#243040]"
           >
             <option value="">Todos</option>
             {Object.entries(STATUS_LABEL).map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
-        </div>
+        </FilterField>
 
-        {/* Período De */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">De</label>
+        <FilterField label="De">
           <input
             type="date"
             value={dataInicio}
             onChange={(e) => setDataInicio(e.target.value)}
-            className="h-8 rounded-md border border-border bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-[#0d1117] dark:border-[#243040]"
           />
-        </div>
+        </FilterField>
 
-        {/* Período Até */}
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Até</label>
+        <FilterField label="Até">
           <input
             type="date"
             value={dataFim}
             onChange={(e) => setDataFim(e.target.value)}
-            className="h-8 rounded-md border border-border bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-[#0d1117] dark:border-[#243040]"
           />
-        </div>
+        </FilterField>
 
-        {/* Limpar */}
         {filtrosAtivos && (
           <Button
             size="sm"
             variant="ghost"
             onClick={limparFiltros}
-            className="h-8 gap-1 text-muted-foreground"
+            className="h-8 gap-1 text-muted-foreground self-end"
           >
             <X className="h-3.5 w-3.5" />
             Limpar
           </Button>
         )}
 
-        {/* Contador */}
         {vendas && (
-          <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
+          <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap self-end pb-1">
             {vendasFiltradas.length === vendas.length
               ? `${vendas.length} vendas`
               : `${vendasFiltradas.length} de ${vendas.length}`}
           </span>
         )}
-      </div>
+      </FilterBar>
 
       {isLoading && (
         <div className="flex h-40 items-center justify-center">

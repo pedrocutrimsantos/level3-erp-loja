@@ -12,6 +12,7 @@ import {
 } from '@/shared/components/ui/Table'
 import { useClientes } from '../hooks/useClientes'
 import type { ClienteResponse } from '@/shared/api/clientes'
+import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
 
 function statusBadge(status: ClienteResponse['statusInad']) {
   const map = {
@@ -64,15 +65,16 @@ export default function ClienteListPage() {
         }
       />
 
-      <div className="mb-4 flex items-center gap-4">
-        <div className="flex-1 max-w-sm">
+      <FilterBar className="mb-4">
+        <FilterField label="Busca" className="flex-1 min-w-[240px]">
           <Input
-            placeholder="Buscar por nome, CPF/CNPJ, e-mail..."
+            placeholder="Nome, CPF/CNPJ, e-mail..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
+            className="h-8 text-sm"
           />
-        </div>
-        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+        </FilterField>
+        <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none self-end pb-1">
           <input
             type="checkbox"
             className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
@@ -81,7 +83,7 @@ export default function ClienteListPage() {
           />
           Apenas ativos
         </label>
-      </div>
+      </FilterBar>
 
       <Card>
         <CardContent className="p-0">

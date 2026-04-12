@@ -7,7 +7,7 @@ import java.time.format.DateTimeFormatter
 /**
  * Implementação stub do emissor de NF-e.
  * Simula a autorização sem enviar para a SEFAZ.
- * Substituir por FocusNFeAdapter (ou outro provider) em produção.
+  Substituir por SefazDirectAdapter em produção.
  */
 class NfEmissaoStub : NfEmissaoPort {
 

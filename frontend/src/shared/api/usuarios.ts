@@ -9,6 +9,7 @@ export interface UsuarioResponse {
   perfilDescricao: string
   vendedor: boolean
   ativo: boolean
+  primeiroAcessoPendente: boolean
   ultimoAcesso: string | null
   createdAt: string
 }
@@ -22,10 +23,9 @@ export interface PerfilResponse {
 export interface CriarUsuarioDto {
   nome: string
   email: string
-  senha: string
+  telefone: string
   perfilCodigo: string
   vendedor?: boolean
-  telefone?: string
 }
 
 export interface AtualizarUsuarioDto {

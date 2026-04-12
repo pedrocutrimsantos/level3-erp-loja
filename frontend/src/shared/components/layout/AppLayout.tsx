@@ -2,27 +2,14 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Toaster } from '@/shared/components/ui/Toaster'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  ShoppingCart,
-  FileText,
   Package,
-  ArrowLeftRight,
-  Truck,
-  FileCheck,
   Wallet,
-  CreditCard,
-  CalendarClock,
-  Tag,
   Layers,
-  History,
-  Users,
-  Users2,
   BarChart2,
-  FileDown,
-  Building2,
+  ShoppingCart,
   Sun,
   Moon,
   Menu,
-  X,
   ChevronDown,
   MoreHorizontal,
   LogOut,
@@ -33,102 +20,19 @@ import { cn } from '@/shared/utils/cn'
 import { useTheme } from '@/shared/theme/ThemeContext'
 import { useAuthStore } from '@/shared/store/authStore'
 import { AlterarSenhaModal } from '@/modules/auth/components/AlterarSenhaModal'
+import { Sidebar, navGroups } from './Sidebar'
 
 const APP_VERSION = '0.1.0'
 
-// ── Estrutura de navegação ────────────────────────────────────────────────────
-
-interface NavItem {
-  label: string
-  to: string
-  icon: React.ReactNode
-  iconColor: string   // cor do ícone quando inativo
-}
-
-interface NavGroup {
-  label: string
-  items: NavItem[]
-}
-
-const navGroups: NavGroup[] = [
-  {
-    label: 'Relatórios',
-    items: [
-      { label: 'Dashboard',  to: '/relatorios/dashboard', iconColor: 'text-blue-400',   icon: <BarChart2 className="h-4 w-4" /> },
-      { label: 'Exportar',   to: '/relatorios/exportar',  iconColor: 'text-cyan-400',   icon: <FileDown  className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Vendas',
-    items: [
-      { label: 'Balcão',     to: '/vendas/balcao',     iconColor: 'text-emerald-400', icon: <ShoppingCart className="h-4 w-4" /> },
-      { label: 'Histórico',  to: '/vendas/historico',  iconColor: 'text-green-400',   icon: <History      className="h-4 w-4" /> },
-      { label: 'Orçamentos', to: '/vendas/orcamentos',  iconColor: 'text-teal-400',    icon: <FileText     className="h-4 w-4" /> },
-      { label: 'Devoluções', to: '/vendas/devolucoes', iconColor: 'text-rose-400',    icon: <ArrowLeftRight className="h-4 w-4" /> },
-      { label: 'Entregas',   to: '/entregas',          iconColor: 'text-sky-400',     icon: <Truck        className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Estoque',
-    items: [
-      { label: 'Produtos',        to: '/produtos',              iconColor: 'text-orange-400',  icon: <Package        className="h-4 w-4" /> },
-      { label: 'Preços de Venda', to: '/produtos/precos',       iconColor: 'text-amber-400',   icon: <Tag            className="h-4 w-4" /> },
-      { label: 'Saldo',           to: '/estoque',               iconColor: 'text-yellow-400',  icon: <Package        className="h-4 w-4" /> },
-      { label: 'Movimentações',   to: '/estoque/movimentacoes', iconColor: 'text-lime-400',    icon: <ArrowLeftRight className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Clientes',
-    items: [
-      { label: 'Clientes', to: '/clientes', iconColor: 'text-purple-400', icon: <Users className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Compras',
-    items: [
-      { label: 'Entradas',     to: '/compras/pedidos', iconColor: 'text-indigo-400', icon: <Truck     className="h-4 w-4" /> },
-      { label: 'Fornecedores', to: '/fornecedores',    iconColor: 'text-violet-400', icon: <Building2 className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Fiscal',
-    items: [
-      { label: 'NF-e', to: '/fiscal/nfe', iconColor: 'text-red-400', icon: <FileCheck className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Financeiro',
-    items: [
-      { label: 'Caixa',          to: '/financeiro/caixa',         iconColor: 'text-emerald-400', icon: <Wallet        className="h-4 w-4" /> },
-      { label: 'Contas a Pagar', to: '/financeiro/contas-pagar',  iconColor: 'text-red-400',     icon: <CreditCard    className="h-4 w-4" /> },
-      { label: 'Títulos',        to: '/financeiro/titulos',       iconColor: 'text-blue-400',    icon: <CreditCard    className="h-4 w-4" /> },
-      { label: 'Fluxo de Caixa', to: '/financeiro/fluxo-caixa',  iconColor: 'text-cyan-400',    icon: <CalendarClock className="h-4 w-4" /> },
-    ],
-  },
-  {
-    label: 'Configurações',
-    items: [
-      { label: 'Empresa',  to: '/configuracoes/empresa',  iconColor: 'text-slate-400',  icon: <Building2 className="h-4 w-4" /> },
-      { label: 'Usuários', to: '/configuracoes/usuarios', iconColor: 'text-zinc-400',   icon: <Users2    className="h-4 w-4" /> },
-    ],
-  },
-]
-
-const bottomNavItems = [
-  { label: 'Dashboard', to: '/relatorios/dashboard', icon: BarChart2 },
-  { label: 'Balcão',    to: '/vendas/balcao',         icon: ShoppingCart },
-  { label: 'Estoque',   to: '/estoque',               icon: Package },
-  { label: 'Caixa',     to: '/financeiro/caixa',      icon: Wallet },
-]
-
 // ── Hook: grupos recolhíveis ──────────────────────────────────────────────────
 
-const STORAGE_KEY = 'nav-collapsed'
+const GROUP_STORAGE_KEY  = 'nav-collapsed'
+const SIDEBAR_STORAGE_KEY = 'sidebar-collapsed'
 
 function useCollapsedGroups() {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const saved = localStorage.getItem(GROUP_STORAGE_KEY)
       return saved ? new Set(JSON.parse(saved) as string[]) : new Set()
     } catch {
       return new Set()
@@ -139,7 +43,7 @@ function useCollapsedGroups() {
     setCollapsed((prev) => {
       const next = new Set(prev)
       next.has(label) ? next.delete(label) : next.add(label)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]))
+      localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify([...next]))
       return next
     })
   }
@@ -147,36 +51,14 @@ function useCollapsedGroups() {
   return { collapsed, toggle }
 }
 
-// ── Sidebar nav item ──────────────────────────────────────────────────────────
+// ── Bottom nav items (mobile) ─────────────────────────────────────────────────
 
-function SidebarNavItem({ item }: { item: NavItem }) {
-  return (
-    <NavLink
-      to={item.to}
-      end
-      className={({ isActive }) =>
-        cn(
-          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150',
-          isActive
-            ? 'bg-white/15 text-white'
-            : 'text-primary-200/70 hover:bg-white/8 hover:text-white'
-        )
-      }
-    >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-secondary" />
-          )}
-          <span className={cn('shrink-0', isActive ? 'text-white' : item.iconColor)}>
-            {item.icon}
-          </span>
-          {item.label}
-        </>
-      )}
-    </NavLink>
-  )
-}
+const bottomNavItems = [
+  { label: 'Dashboard', to: '/relatorios/dashboard', icon: BarChart2 },
+  { label: 'Balcão',    to: '/vendas/balcao',         icon: ShoppingCart },
+  { label: 'Estoque',   to: '/estoque',               icon: Package },
+  { label: 'Caixa',     to: '/financeiro/caixa',      icon: Wallet },
+]
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
@@ -186,12 +68,30 @@ export interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme()
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen]       = useState(false)
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen]   = useState(false)
   const [alterarSenhaOpen, setAlterarSenhaOpen] = useState(false)
-  const { collapsed, toggle } = useCollapsedGroups()
-  const location = useLocation()
+  const { collapsed: collapsedGroups, toggle: toggleGroup } = useCollapsedGroups()
+
+  // Sidebar collapse state — persiste em localStorage
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  function toggleSidebar() {
+    setSidebarCollapsed((v) => {
+      const next = !v
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next))
+      return next
+    })
+  }
+
+  const location  = useLocation()
   const navigate  = useNavigate()
   const { logout, nome } = useAuthStore()
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -223,81 +123,27 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => { document.body.style.overflow = '' }
   }, [drawerOpen, moreSheetOpen])
 
-  // ── Conteúdo da sidebar ───────────────────────────────────────────────────
-
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center justify-between px-4 py-5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/20">
-            <Layers className="h-4.5 w-4.5 text-secondary" />
-          </div>
-          <div className="leading-none">
-            <span className="block text-sm font-bold text-white tracking-tight">Madex</span>
-            <span className="block text-[10px] text-primary-300/70 font-normal">by Level3</span>
-          </div>
-        </div>
-        <button
-          className="md:hidden rounded-lg p-1 text-primary-300 hover:bg-white/10 transition-colors"
-          onClick={() => setDrawerOpen(false)}
-          aria-label="Fechar menu"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div className="mx-4 h-px bg-white/10" />
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {navGroups.map((group) => {
-          const isCollapsed = collapsed.has(group.label)
-          return (
-            <div key={group.label} className="mb-1">
-              <button
-                onClick={() => toggle(group.label)}
-                className="flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary-400/70 hover:text-primary-200 transition-colors"
-              >
-                {group.label}
-                <ChevronDown
-                  className={cn(
-                    'h-3 w-3 shrink-0 transition-transform duration-200',
-                    isCollapsed ? '-rotate-90' : 'rotate-0'
-                  )}
-                />
-              </button>
-
-              {!isCollapsed && (
-                <div className="mt-0.5 space-y-0.5">
-                  {group.items.map((item) => (
-                    <SidebarNavItem key={item.to} item={item} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
-
-      {/* Divider */}
-      <div className="mx-4 h-px bg-white/10" />
-
-      {/* Rodapé: versão */}
-      <div className="px-3 py-3">
-        <p className="px-3 text-[10px] text-primary-400/50 select-none">v{APP_VERSION}</p>
-      </div>
-    </div>
-  )
-
   return (
     <>
     <div className="flex h-screen overflow-hidden bg-background dark:bg-[#0d1117]">
 
       {/* ── Sidebar desktop ──────────────────────────────────────────────────── */}
-      <aside className="hidden md:flex w-[240px] shrink-0 flex-col bg-primary-900 text-primary-50 dark:bg-[#111820]">
-        {sidebarContent}
+      <aside
+        className={cn(
+          'hidden md:flex shrink-0 flex-col',
+          'bg-gradient-to-b from-primary-900 via-primary-900 to-[#0d2b1e]',
+          'dark:from-[#111820] dark:via-[#111820] dark:to-[#0a1208]',
+          'text-primary-50 transition-[width] duration-200 ease-out overflow-hidden',
+          sidebarCollapsed ? 'w-[60px]' : 'w-[240px]',
+        )}
+      >
+        <Sidebar
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapsed={toggleSidebar}
+          collapsedGroups={collapsedGroups}
+          onToggleGroup={toggleGroup}
+          version={APP_VERSION}
+        />
       </aside>
 
       {/* ── Overlay drawer mobile ─────────────────────────────────────────────── */}
@@ -310,19 +156,29 @@ export function AppLayout({ children }: AppLayoutProps) {
       )}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-primary-900 text-primary-50 dark:bg-[#111820]',
+          'fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col',
+          'bg-gradient-to-b from-primary-900 to-[#0d2b1e] text-primary-50',
+          'dark:from-[#111820] dark:to-[#0a1208]',
           'transition-transform duration-300 ease-in-out md:hidden',
-          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+          drawerOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        {sidebarContent}
+        <Sidebar
+          isCollapsed={false}
+          onToggleCollapsed={() => {}}
+          collapsedGroups={collapsedGroups}
+          onToggleGroup={toggleGroup}
+          version={APP_VERSION}
+          showCloseButton
+          onClose={() => setDrawerOpen(false)}
+        />
       </aside>
 
       {/* ── Área principal ───────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
 
         {/* Topbar desktop */}
-        <header className="hidden md:flex items-center justify-between border-b border-border bg-card px-6 py-3 dark:bg-[#161d27] dark:border-[#243040]">
+        <header className="hidden md:flex items-center justify-between border-b border-border/60 bg-card/80 backdrop-blur-sm px-6 py-2.5 dark:bg-[#161d27]/90 dark:border-[#243040]/80">
           <div /> {/* placeholder para breadcrumb futuro */}
           <div className="flex items-center gap-3">
             <button
@@ -407,8 +263,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Conteúdo */}
         <main className="flex-1 overflow-y-auto bg-background dark:bg-[#0d1117]">
-          <div className="min-h-full p-5 pb-20 md:p-6 md:pb-6 text-foreground dark:text-[#e2e8f0]">
-            {children ?? <Outlet />}
+          <div className="min-h-full p-4 pb-20 md:px-8 md:py-7 md:pb-8 text-foreground dark:text-[#e2e8f0]">
+            <div className="mx-auto w-full max-w-[1560px]">
+              {children ?? <Outlet />}
+            </div>
           </div>
         </main>
       </div>
@@ -426,7 +284,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           'fixed inset-x-0 bottom-16 z-50 flex flex-col rounded-t-2xl bg-card dark:bg-[#161d27]',
           'border-t border-border dark:border-[#243040] shadow-xl',
           'max-h-[70vh] overflow-y-auto transition-transform duration-300 md:hidden',
-          moreSheetOpen ? 'translate-y-0' : 'translate-y-full'
+          moreSheetOpen ? 'translate-y-0' : 'translate-y-full',
         )}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -435,18 +293,18 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <div className="px-4 pb-6 pt-2">
           {navGroups.map((group) => {
-            const isCollapsed = collapsed.has(group.label)
+            const isCollapsed = collapsedGroups.has(group.label)
             return (
               <div key={group.label} className="mb-1">
                 <button
-                  onClick={() => toggle(group.label)}
+                  onClick={() => toggleGroup(group.label)}
                   className="flex w-full items-center justify-between px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {group.label}
                   <ChevronDown
                     className={cn(
                       'h-3 w-3 shrink-0 transition-transform duration-200',
-                      isCollapsed ? '-rotate-90' : 'rotate-0'
+                      isCollapsed ? '-rotate-90' : 'rotate-0',
                     )}
                   />
                 </button>
@@ -462,7 +320,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                             'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                             isActive
                               ? 'bg-primary/10 text-primary dark:bg-[#243040] dark:text-[#4ade80]'
-                              : 'text-foreground hover:bg-muted dark:text-[#94a3b8] dark:hover:bg-[#243040]'
+                              : 'text-foreground hover:bg-muted dark:text-[#94a3b8] dark:hover:bg-[#243040]',
                           )
                         }
                       >
@@ -481,7 +339,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
             )
           })}
-
         </div>
       </div>
 
@@ -497,7 +354,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
                 isActive
                   ? 'text-primary dark:text-[#4ade80]'
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )
             }
           >
@@ -515,7 +372,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
             moreSheetOpen
               ? 'text-primary dark:text-[#4ade80]'
-              : 'text-muted-foreground hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           <MoreHorizontal className="h-5 w-5" />

@@ -1,0 +1,1 @@
+function u(o,t="Ocorreu um erro. Tente novamente."){var n,s,a,e;return((s=(n=o==null?void 0:o.response)==null?void 0:n.data)==null?void 0:s.detalhes)??((e=(a=o==null?void 0:o.response)==null?void 0:a.data)==null?void 0:e.erro)??(o instanceof Error?o.message:t)}export{u as e};

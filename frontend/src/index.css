@@ -104,6 +104,12 @@
   ::-webkit-scrollbar-track  { background: transparent; }
   ::-webkit-scrollbar-thumb  { background: rgb(var(--border)); border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--muted-foreground) / 0.4); }
+
+  /* Seleção de texto */
+  ::selection {
+    background-color: rgb(var(--ring) / 0.15);
+    color: rgb(var(--foreground));
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -192,3 +198,33 @@
 .dark .text-muted-foreground { color: #94a3b8; }
 .dark .text-primary          { color: #4ade80; }
 .dark                        { color: #e2e8f0; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   UTILITÁRIOS GLOBAIS — componentes reutilizáveis
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Transição suave padrão para cards interativos */
+.card-interactive {
+  @apply transition-all duration-200 cursor-pointer;
+}
+.card-interactive:hover {
+  @apply shadow-card-hover -translate-y-px;
+}
+
+/* Número de dados destacado (KPIs, saldos) */
+.data-number {
+  @apply text-2xl font-bold tabular-nums leading-none tracking-tight;
+}
+.data-number-lg {
+  @apply text-3xl font-bold tabular-nums leading-none tracking-tight;
+}
+
+/* Label de campo padronizado */
+.field-label {
+  @apply text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80;
+}
+
+/* Separador elegante */
+.elegant-divider {
+  @apply h-px bg-gradient-to-r from-transparent via-border to-transparent;
+}

@@ -36,7 +36,7 @@ function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
 
   return (
     <TableRow>
-      <TableCell className="font-medium text-gray-900">
+      <TableCell className="font-medium text-foreground">
         <button
           className="hover:underline text-primary text-left"
           onClick={() => navigate(`/estoque/${produto.id}`)}
@@ -54,11 +54,11 @@ function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
       </TableCell>
       <TableCell className="tabular-nums text-sm">
         {isLoading ? (
-          <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
         ) : saldoM3 != null ? (
           <span
             className={
-              saldoM3 <= 0 ? 'text-red-600 font-semibold' : 'text-gray-900'
+              saldoM3 <= 0 ? 'text-red-600 font-semibold' : 'text-foreground'
             }
           >
             {formatarM3(saldoM3)} m³
@@ -70,9 +70,9 @@ function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
       <TableCell className="tabular-nums text-sm">
         {produto.tipo === 'MADEIRA' ? (
           isLoading ? (
-            <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-24 animate-pulse rounded bg-muted" />
           ) : saldoMetros != null ? (
-            <span className="text-gray-700">
+            <span className="text-foreground/80">
               {formatarMetros(saldoMetros)} m
               {saldo?.saldoPecas != null && (
                 <span className="ml-1.5 text-xs font-medium text-foreground">
@@ -89,7 +89,7 @@ function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
       </TableCell>
       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
         {isLoading ? (
-          <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+          <div className="h-4 w-32 animate-pulse rounded bg-muted" />
         ) : dataAtualizacao ? (
           new Date(dataAtualizacao).toLocaleString('pt-BR', {
             day: '2-digit',
@@ -145,7 +145,7 @@ export default function EstoqueListPage() {
 
       {/* Filtro */}
       <div className="mb-4 flex items-center gap-2">
-        <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-gray-700">
+        <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-foreground/80">
           <input
             type="checkbox"
             className="h-4 w-4 rounded border-border text-primary focus:ring-primary"

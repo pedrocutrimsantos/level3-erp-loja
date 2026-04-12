@@ -24,17 +24,16 @@ class UsuarioService(private val repo: UsuarioRepository) {
     suspend fun criar(dto: CriarUsuarioDto): UsuarioResponse {
         require(dto.nome.isNotBlank()) { "Nome é obrigatório" }
         require(dto.email.isNotBlank()) { "E-mail é obrigatório" }
-        require(dto.senha.length >= 8) { "Senha deve ter no mínimo 8 caracteres" }
+        require(dto.telefone.isNotBlank()) { "Telefone é obrigatório para o envio do token de primeiro acesso" }
         require(!repo.emailJaExiste(dto.email)) { "Já existe um usuário com este e-mail" }
         require(repo.perfilExiste(dto.perfilCodigo)) { "Perfil não encontrado: ${dto.perfilCodigo}" }
 
         val req = CriarUsuarioRequest(
-            nome        = dto.nome,
-            email       = dto.email,
-            senha       = dto.senha,
+            nome         = dto.nome,
+            email        = dto.email,
+            telefone     = dto.telefone,
             perfilCodigo = dto.perfilCodigo,
-            vendedor    = dto.vendedor,
-            telefone    = dto.telefone,
+            vendedor     = dto.vendedor,
         )
         return toResponse(repo.criar(req))
     }
@@ -82,15 +81,16 @@ class UsuarioService(private val repo: UsuarioRepository) {
         repo.listarPerfis().map { PerfilResponse(it.id.toString(), it.codigo, it.descricao) }
 
     private fun toResponse(u: UsuarioListItem) = UsuarioResponse(
-        id              = u.id.toString(),
-        nome            = u.nome,
-        email           = u.email,
-        telefone        = u.telefone,
-        perfilCodigo    = u.perfilCodigo,
-        perfilDescricao = u.perfilDescricao,
-        vendedor        = u.vendedor,
-        ativo           = u.ativo,
-        ultimoAcesso    = u.ultimoAcesso,
-        createdAt       = u.createdAt,
+        id                      = u.id.toString(),
+        nome                    = u.nome,
+        email                   = u.email,
+        telefone                = u.telefone,
+        perfilCodigo            = u.perfilCodigo,
+        perfilDescricao         = u.perfilDescricao,
+        vendedor                = u.vendedor,
+        ativo                   = u.ativo,
+        primeiroAcessoPendente  = u.primeiroAcessoPendente,
+        ultimoAcesso            = u.ultimoAcesso,
+        createdAt               = u.createdAt,
     )
 }

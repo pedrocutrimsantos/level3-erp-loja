@@ -46,6 +46,26 @@ fun Route.relatorioRoutes(relatorioService: RelatorioService) {
                     }
                 call.respond(relatorioService.fluxoCaixaExport(ini, fim))
             }
+
+            // GET /api/v1/relatorios/margem-periodo?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD
+            get("/margem-periodo") {
+                val (ini, fim) = parsePeriodo(call.request.queryParameters["dataInicio"], call.request.queryParameters["dataFim"])
+                    ?: run {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "dataInicio e dataFim são obrigatórios (formato YYYY-MM-DD)"))
+                        return@get
+                    }
+                call.respond(relatorioService.margemPeriodo(ini, fim))
+            }
+
+            // GET /api/v1/relatorios/dre?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD
+            get("/dre") {
+                val (ini, fim) = parsePeriodo(call.request.queryParameters["dataInicio"], call.request.queryParameters["dataFim"])
+                    ?: run {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "dataInicio e dataFim são obrigatórios (formato YYYY-MM-DD)"))
+                        return@get
+                    }
+                call.respond(relatorioService.dre(ini, fim))
+            }
         }
 }
 

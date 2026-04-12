@@ -110,102 +110,94 @@ export default function ProdutoFormPage() {
       />
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className={`grid gap-6 ${isMadeira ? 'lg:grid-cols-2' : 'max-w-2xl'}`}>
-          {/* Dados principais */}
+        {/* Sempre 2 colunas em lg+ — remove a restrição max-w-2xl do produto normal */}
+        <div className="grid gap-6 lg:grid-cols-2">
+
+          {/* ── Coluna esquerda: Identificação ── */}
           <div className="flex flex-col gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Dados do Produto</CardTitle>
+                <CardTitle>Identificação</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <Input
-                  label="Código *"
-                  placeholder="Ex: PINUS-25x100"
-                  error={errors.codigo?.message}
-                  {...register('codigo')}
-                />
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Descrição — sempre span-2 */}
+                  <div className="sm:col-span-2">
+                    <Input
+                      label="Descrição *"
+                      placeholder="Ex: Pinus Serrado 25×100mm"
+                      error={errors.descricao?.message}
+                      {...register('descricao')}
+                    />
+                  </div>
 
-                <Input
-                  label="Descrição *"
-                  placeholder="Ex: Pinus Serrado 25×100mm"
-                  error={errors.descricao?.message}
-                  {...register('descricao')}
-                />
+                  {/* Código */}
+                  <div>
+                    <Input
+                      label="Código *"
+                      placeholder="Ex: PINUS-25x100"
+                      error={errors.codigo?.message}
+                      {...register('codigo')}
+                    />
+                  </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-gray-700">Tipo *</label>
-                  <Controller
-                    name="tipo"
-                    control={control}
-                    render={({ field }) => (
-                      <select
-                        {...field}
-                        className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
-                        <option value="NORMAL">Normal</option>
-                        <option value="MADEIRA">Madeira</option>
-                      </select>
-                    )}
-                  />
-                  {errors.tipo && (
-                    <p className="text-xs text-destructive">{errors.tipo.message}</p>
-                  )}
-                </div>
-
-                {/* Unidade de venda — somente para NORMAL */}
-                {!isMadeira && (
+                  {/* Tipo */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Unidade de Venda *
-                    </label>
+                    <label className="text-sm font-medium text-foreground dark:text-[#e2e8f0]">Tipo *</label>
                     <Controller
-                      name="unidadeVendaSigla"
+                      name="tipo"
                       control={control}
                       render={({ field }) => (
                         <select
                           {...field}
-                          className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 dark:bg-[#0d1117] dark:border-[#243040]"
                         >
-                          <option value="">Selecione…</option>
-                          {unidadesNormal.map((u) => (
-                            <option key={u.codigo} value={u.codigo}>
-                              {u.codigo} — {u.descricao}
-                            </option>
-                          ))}
+                          <option value="NORMAL">Normal</option>
+                          <option value="MADEIRA">Madeira</option>
                         </select>
                       )}
                     />
-                    {errors.unidadeVendaSigla && (
-                      <p className="text-xs text-destructive">
-                        {errors.unidadeVendaSigla.message}
-                      </p>
+                    {errors.tipo && (
+                      <p className="text-xs text-destructive">{errors.tipo.message}</p>
                     )}
                   </div>
-                )}
 
-                {isMadeira && (
-                  <p className="text-xs text-muted-foreground">
-                    Madeira: compra em m³ · estoque em metro linear · nota fiscal em m³.
-                  </p>
-                )}
+                  {/* Unidade de venda — somente NORMAL */}
+                  {!isMadeira && (
+                    <div className="sm:col-span-2 flex flex-col gap-1">
+                      <label className="text-sm font-medium text-foreground dark:text-[#e2e8f0]">
+                        Unidade de Venda *
+                      </label>
+                      <Controller
+                        name="unidadeVendaSigla"
+                        control={control}
+                        render={({ field }) => (
+                          <select
+                            {...field}
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 dark:bg-[#0d1117] dark:border-[#243040]"
+                          >
+                            <option value="">Selecione…</option>
+                            {unidadesNormal.map((u) => (
+                              <option key={u.codigo} value={u.codigo}>
+                                {u.codigo} — {u.descricao}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      />
+                      {errors.unidadeVendaSigla && (
+                        <p className="text-xs text-destructive">{errors.unidadeVendaSigla.message}</p>
+                      )}
+                    </div>
+                  )}
 
-                <Input
-                  label="NCM *"
-                  placeholder="8 dígitos — Ex: 44071190"
-                  maxLength={8}
-                  error={errors.ncm?.message}
-                  {...register('ncm')}
-                />
-
-                <Input
-                  label={precoLabel}
-                  type="number"
-                  min={0.01}
-                  step={0.01}
-                  placeholder="Ex: 12,50"
-                  error={errors.precoVenda?.message}
-                  {...register('precoVenda', { valueAsNumber: true })}
-                />
+                  {/* Aviso madeira */}
+                  {isMadeira && (
+                    <div className="sm:col-span-2 rounded-lg bg-primary/5 dark:bg-[#243040]/50 px-3 py-2 text-xs text-muted-foreground">
+                      Madeira: compra em m³ · estoque em metro linear · nota fiscal em m³.
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -215,64 +207,102 @@ export default function ProdutoFormPage() {
                 <CardHeader>
                   <CardTitle>Dimensões da Madeira</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <Input
-                    label="Espessura (m) *"
-                    type="number"
-                    min={0.001}
-                    step={0.001}
-                    placeholder="Ex: 0,05 (para 5cm)"
-                    error={errors.espessuraM?.message}
-                    {...register('espessuraM', { valueAsNumber: true })}
-                  />
-                  <Input
-                    label="Largura (m) *"
-                    type="number"
-                    min={0.001}
-                    step={0.001}
-                    placeholder="Ex: 0,20 (para 20cm)"
-                    error={errors.larguraM?.message}
-                    {...register('larguraM', { valueAsNumber: true })}
-                  />
-                  <div className="border-t border-border pt-3">
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Input
-                      label="Comprimento da peça (m) — opcional"
+                      label="Espessura (m) *"
                       type="number"
-                      min={0.01}
-                      step={0.01}
-                      placeholder="Ex: 3,00 (tábuas de 3 metros)"
-                      error={errors.comprimentoPecaM?.message}
-                      {...register('comprimentoPecaM', { valueAsNumber: true })}
+                      min={0.001}
+                      step={0.001}
+                      placeholder="Ex: 0,05 (para 5cm)"
+                      error={errors.espessuraM?.message}
+                      {...register('espessuraM', { valueAsNumber: true })}
                     />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Se preenchido, habilita venda e entrada por peça (além de metros lineares).
-                    </p>
+                    <Input
+                      label="Largura (m) *"
+                      type="number"
+                      min={0.001}
+                      step={0.001}
+                      placeholder="Ex: 0,20 (para 20cm)"
+                      error={errors.larguraM?.message}
+                      {...register('larguraM', { valueAsNumber: true })}
+                    />
+                    <div className="sm:col-span-2 border-t border-border pt-3">
+                      <Input
+                        label="Comprimento da peça (m) — opcional"
+                        type="number"
+                        min={0.01}
+                        step={0.01}
+                        placeholder="Ex: 3,00 (tábuas de 3 metros)"
+                        error={errors.comprimentoPecaM?.message}
+                        {...register('comprimentoPecaM', { valueAsNumber: true })}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Se preenchido, habilita venda e entrada por peça (além de metros lineares).
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          {/* Preview de conversão — apenas para madeira */}
-          {isMadeira && (
-            <div className="flex flex-col gap-6">
+          {/* ── Coluna direita: Precificação + Preview ── */}
+          <div className="flex flex-col gap-6">
+            {/* NCM e Preço */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Precificação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Input
+                      label="NCM *"
+                      placeholder="8 dígitos — Ex: 44071190"
+                      maxLength={8}
+                      error={errors.ncm?.message}
+                      {...register('ncm')}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Input
+                      label={precoLabel}
+                      type="number"
+                      min={0.01}
+                      step={0.01}
+                      placeholder="Ex: 12,50"
+                      error={errors.precoVenda?.message}
+                      {...register('precoVenda', { valueAsNumber: true })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Preview de conversão — apenas para madeira */}
+            {isMadeira && (
               <Card>
                 <CardHeader>
                   <CardTitle>Preview de Conversão</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ConversaoMadeiraWidget
-                    espessuraM={
-                      typeof espessuraM === 'number' && espessuraM > 0 ? espessuraM : null
-                    }
-                    larguraM={
-                      typeof larguraM === 'number' && larguraM > 0 ? larguraM : null
-                    }
+                    espessuraM={typeof espessuraM === 'number' && espessuraM > 0 ? espessuraM : null}
+                    larguraM={typeof larguraM === 'number' && larguraM > 0 ? larguraM : null}
                   />
                 </CardContent>
               </Card>
-            </div>
-          )}
+            )}
+
+            {/* Hint para produto normal */}
+            {!isMadeira && (
+              <div className="rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground dark:border-[#243040]">
+                <p className="font-medium text-foreground dark:text-[#e2e8f0] mb-1">Produto Normal</p>
+                <p className="text-xs">Após salvar, você poderá gerenciar o estoque inicial na tela de Estoque.</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Ações */}

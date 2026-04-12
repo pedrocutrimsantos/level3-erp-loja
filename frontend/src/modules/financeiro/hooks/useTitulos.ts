@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { titulosApi, type BaixaTituloRequest, type CriarDespesaRequest } from '@/shared/api/titulos'
 
+export function useResumoReceber() {
+  return useQuery({
+    queryKey: ['resumo-receber'],
+    queryFn: () => titulosApi.resumoReceber(),
+    staleTime: 60_000,
+  })
+}
+
 export function useTitulos(params?: { tipo?: string; status?: string; limit?: number }) {
   return useQuery({
     queryKey: ['titulos', params],
@@ -44,6 +52,7 @@ export function useBaixaTitulo() {
       qc.invalidateQueries({ queryKey: ['titulos'] })
       qc.invalidateQueries({ queryKey: ['fluxo-caixa'] })
       qc.invalidateQueries({ queryKey: ['resumo-pagar'] })
+      qc.invalidateQueries({ queryKey: ['resumo-receber'] })
     },
   })
 }
@@ -55,6 +64,7 @@ export function useCancelarTitulo() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['titulos'] })
       qc.invalidateQueries({ queryKey: ['resumo-pagar'] })
+      qc.invalidateQueries({ queryKey: ['resumo-receber'] })
     },
   })
 }

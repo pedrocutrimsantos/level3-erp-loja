@@ -96,6 +96,9 @@ export const nfeApi = {
       }).then((r) => r.data)
     ),
 
+  reprocessar: (id: string) =>
+    api.post<NfListItemResponse>(`/fiscal/nfe/${id}/reprocessar`).then((r) => r.data),
+
   importarXml: (payload: {
     chaveAcesso: string | null
     emitenteCnpj: string

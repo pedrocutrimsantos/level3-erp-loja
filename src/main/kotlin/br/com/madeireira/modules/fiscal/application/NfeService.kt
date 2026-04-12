@@ -3,17 +3,24 @@ package br.com.madeireira.modules.fiscal.application
 import br.com.madeireira.modules.cliente.infrastructure.ClienteRepository
 import br.com.madeireira.modules.compra.api.dto.EntradaCompraRequest
 import br.com.madeireira.modules.compra.application.CompraService
+import io.github.oshai.kotlinlogging.KotlinLogging
+import br.com.madeireira.modules.empresa.infrastructure.EmpresaRepositoryImpl
 import br.com.madeireira.modules.fiscal.api.dto.*
 import br.com.madeireira.modules.fiscal.domain.model.AmbienteNf
 import br.com.madeireira.modules.fiscal.domain.model.ModeloNf
 import br.com.madeireira.modules.fiscal.domain.model.NfEmitida
 import br.com.madeireira.modules.fiscal.domain.model.StatusNf
 import br.com.madeireira.modules.fiscal.infrastructure.NfRepository
+import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazCertificadoLoader
+import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazDirectAdapter
+import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazEmissorConfig
 import br.com.madeireira.modules.produto.infrastructure.ProdutoRepository
 import br.com.madeireira.modules.venda.application.VendaService
 import br.com.madeireira.modules.venda.infrastructure.VendaRepository
 import java.time.Instant
 import java.util.UUID
+
+private val log = KotlinLogging.logger {}
 
 class NfeService(
     private val nfRepo: NfRepository,
@@ -21,9 +28,41 @@ class NfeService(
     private val produtoRepo: ProdutoRepository,
     private val vendaService: VendaService,
     private val compraService: CompraService? = null,
-    private val emissor: NfEmissaoPort = NfEmissaoStub(),
+    private val emissorFallback: NfEmissaoPort = NfEmissaoStub(),   // usado se empresa não tiver token
     private val clienteRepo: ClienteRepository? = null,
+    private val xmlArquivador: XmlNfeArquivador = XmlNfeArquivadorLocal(),
+    private val empresaRepo: EmpresaRepositoryImpl? = null,
 ) {
+
+    /**
+     * Resolve o adapter correto para o tenant:
+     *   1. Certificado salvo no banco (upload pelo usuário na tela de Empresa) — fonte primária
+     *   2. Variável de ambiente NFE_CERT_PATH — fallback de servidor
+     *   3. emissorFallback (stub) — se nenhuma fonte estiver configurada
+     */
+    private suspend fun resolverEmissor(): NfEmissaoPort {
+        val empresa = empresaRepo?.get() ?: return emissorFallback
+        val config  = SefazEmissorConfig.fromEmpresa(empresa)
+
+        // Fonte 1: certificado salvo no banco pelo usuário
+        val certBd = empresa.certificadoNfeBytes?.let { bytes ->
+            val senha = empresa.certificadoNfeSenha ?: return@let null
+            runCatching { SefazCertificadoLoader.carregarDeBytes(bytes, senha) }
+                .onFailure { log.warn { "Falha ao carregar cert do banco: ${it.message}" } }
+                .getOrNull()
+        }
+        if (certBd != null) {
+            return SefazDirectAdapter(config = config, keyStore = certBd.keyStore, senha = certBd.senha)
+        }
+
+        // Fonte 2: variável de ambiente
+        val certEnv = SefazCertificadoLoader.carregarComSenha()
+        if (certEnv != null) {
+            return SefazDirectAdapter(config = config, keyStore = certEnv.keyStore, senha = certEnv.senha)
+        }
+
+        return emissorFallback
+    }
     // ── Listagem ──────────────────────────────────────────────────────────────
 
     suspend fun listar(limit: Int = 100): List<NfListItemResponse> {
@@ -76,7 +115,14 @@ class NfeService(
             )
         }
 
-        val serie  = "001"
+        // Carrega configuração da empresa antes de tudo — serieNfe e ambienteNfe são necessários
+        val empresa    = empresaRepo?.get()
+        val ambienteNf = when (empresa?.ambienteNfe?.uppercase()) {
+            "PRODUCAO" -> AmbienteNf.PRODUCAO
+            else       -> AmbienteNf.HOMOLOGACAO
+        }
+
+        val serie  = empresa?.serieNfe?.takeIf { it.isNotBlank() } ?: "001"
         val numero = nfRepo.proximoNumero(serie)
         val itens  = vendaRepo.findItensByVendaId(vendaId)
         val nfItens = itens.map { item ->
@@ -102,7 +148,15 @@ class NfeService(
             clienteCpfCnpj = clienteCpfCnpj,
         )
 
-        val resultado = emissor.emitir(request)
+        // Valida relógio antes de emitir — SEFAZ rejeita desvio > 5 min (código 205)
+        RelogioNfeValidator.validar()
+
+        val resultado = resolverEmissor().emitir(request)
+
+        // Arquiva XML antes do commit no banco — se o banco falhar, o XML não é perdido
+        if (!resultado.xml.isNullOrBlank() && resultado.chaveAcesso.length == 44) {
+            xmlArquivador.arquivar(resultado.chaveAcesso, resultado.xml)
+        }
 
         val nf = NfEmitida(
             id                    = UUID.randomUUID(),
@@ -113,7 +167,7 @@ class NfeService(
             serie                 = serie,
             chaveAcesso           = resultado.chaveAcesso,
             statusSefaz           = resultado.status,
-            ambiente              = AmbienteNf.HOMOLOGACAO,
+            ambiente              = ambienteNf,
             dataEmissao           = now,
             dataAutorizacao       = if (resultado.status == StatusNf.AUTORIZADA) now else null,
             protocoloAutorizacao  = if (resultado.status == StatusNf.AUTORIZADA) resultado.protocolo else null,
@@ -147,7 +201,7 @@ class NfeService(
 
         val chave = requireNotNull(nf.chaveAcesso) { "NF sem chave de acesso" }
         val vendaIdCancel = requireNotNull(nf.vendaId) { "NF sem venda associada" }
-        val resultado = emissor.cancelar(vendaIdCancel, chave, justificativa)
+        val resultado = resolverEmissor().cancelar(vendaIdCancel, chave, justificativa)
 
         val atualizada = nf.copy(
             statusSefaz           = resultado.status,
@@ -158,6 +212,59 @@ class NfeService(
 
         val salva = nfRepo.update(atualizada)
         val venda = vendaRepo.findVendaById(vendaIdCancel)
+        return salva.toResponse(vendaNumero = venda?.numero)
+    }
+
+    // ── Reprocessamento de NF AGUARDANDO ─────────────────────────────────────
+
+    /**
+     * Re-consulta o status de uma NF-e travada em [StatusNf.AGUARDANDO] na SEFAZ.
+     *
+     * Ocorre quando a SEFAZ demora mais que o polling de 30 s na emissão original.
+     * SefazDirectAdapter suporta consulta por chave via NFeConsultaProtocolo4.
+     * O stub retorna null — não há estado para consultar.
+     *
+     * @throws NoSuchElementException se a NF não existir
+     * @throws IllegalStateException se a NF não estiver em AGUARDANDO
+     */
+    suspend fun reprocessar(nfId: UUID): NfListItemResponse {
+        val nf = nfRepo.findById(nfId)
+            ?: throw NoSuchElementException("NF não encontrada: $nfId")
+
+        require(nf.statusSefaz == StatusNf.AGUARDANDO) {
+            "Só é possível reprocessar NF-e em status AGUARDANDO (status atual: ${nf.statusSefaz})"
+        }
+
+        val vendaId = requireNotNull(nf.vendaId) { "NF sem venda associada: $nfId" }
+        val emissor = resolverEmissor()
+        val resultado = emissor.consultarStatus(vendaId)
+
+        if (resultado == null) {
+            log.info { "reprocessar: adapter não suporta consulta avulsa — NF $nfId permanece AGUARDANDO" }
+            val venda = vendaRepo.findVendaById(vendaId)
+            return nf.toResponse(vendaNumero = venda?.numero)
+        }
+
+        log.info { "reprocessar: NF $nfId status atualizado para ${resultado.status}" }
+
+        // Arquiva XML se chegou autorizado
+        if (!resultado.xml.isNullOrBlank() && resultado.chaveAcesso.length == 44) {
+            xmlArquivador.arquivar(resultado.chaveAcesso, resultado.xml)
+        }
+
+        val now = Instant.now()
+        val atualizada = nf.copy(
+            chaveAcesso          = resultado.chaveAcesso.ifBlank { nf.chaveAcesso },
+            statusSefaz          = resultado.status,
+            protocoloAutorizacao = resultado.protocolo.ifBlank { nf.protocoloAutorizacao },
+            dataAutorizacao      = if (resultado.status == StatusNf.AUTORIZADA) now else nf.dataAutorizacao,
+            xmlAutorizado        = resultado.xml ?: nf.xmlAutorizado,
+            motivoRejeicao       = resultado.motivoRejeicao,
+            tentativasEnvio      = nf.tentativasEnvio + 1,
+        )
+
+        val salva = nfRepo.update(atualizada)
+        val venda = vendaRepo.findVendaById(vendaId)
         return salva.toResponse(vendaNumero = venda?.numero)
     }
 

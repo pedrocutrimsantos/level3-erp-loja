@@ -121,6 +121,76 @@ export interface RelatorioMargemResponse {
   linhas: RelatorioMargemLinha[]
 }
 
+// ── Relatório de Margem por Período ──────────────────────────────────────────
+
+export interface MargemPeriodoDetalhe {
+  vendaNumero: string
+  data: string
+  quantidade: string
+  precoUnitario: string
+  valorTotal: string
+  custoEstimado: string | null
+  lucroEstimado: string | null
+}
+
+export interface RelatorioMargemPeriodoLinha {
+  produtoCodigo: string
+  produtoDescricao: string
+  tipo: string
+  unidade: string
+  quantidadeVendida: string
+  receitaTotal: string
+  custoTotal: string | null
+  lucroBruto: string | null
+  margemBruta: string | null
+  ticketMedio: string
+  quantidadeVendas: number
+  semCusto: boolean
+  detalhe: MargemPeriodoDetalhe[]
+}
+
+export interface RelatorioMargemPeriodoResponse {
+  dataInicio: string
+  dataFim: string
+  geradoEm: string
+  totalProdutos: number
+  receitaTotalPeriodo: string
+  custoTotalPeriodo: string
+  lucroBrutoPeriodo: string
+  margemMediaPonderada: string | null
+  produtosSemCusto: number
+  linhas: RelatorioMargemPeriodoLinha[]
+}
+
+// ── DRE ───────────────────────────────────────────────────────────────────────
+
+export interface DreCategoriaDto {
+  categoria: string
+  valor: string
+  percentualSobreReceita: string
+}
+
+export interface DreResponse {
+  dataInicio: string
+  dataFim: string
+  geradoEm: string
+  receitaBruta: string
+  devolucoes: string
+  receitaLiquida: string
+  custoMercadorias: string
+  cmvEstimado: boolean
+  lucroBruto: string
+  margemBruta: string
+  despesas: DreCategoriaDto[]
+  totalDespesas: string
+  resultadoOperacional: string
+  margemOperacional: string
+  resultadoPositivo: boolean
+  quantidadeVendas: number
+  ticketMedio: string
+  quantidadeDevolucoes: number
+}
+
 export const relatoriosApi = {
   dashboard: () =>
     api.get<DashboardResponse>('/relatorios/dashboard').then((r) => r.data),
@@ -140,4 +210,14 @@ export const relatoriosApi = {
 
   margem: () =>
     api.get<RelatorioMargemResponse>('/relatorios/margem').then((r) => r.data),
+
+  dre: (dataInicio: string, dataFim: string) =>
+    api
+      .get<DreResponse>('/relatorios/dre', { params: { dataInicio, dataFim } })
+      .then((r) => r.data),
+
+  margemPeriodo: (dataInicio: string, dataFim: string) =>
+    api
+      .get<RelatorioMargemPeriodoResponse>('/relatorios/margem-periodo', { params: { dataInicio, dataFim } })
+      .then((r) => r.data),
 }

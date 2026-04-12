@@ -16,7 +16,9 @@ import { useSaldoEstoque } from '@/modules/estoque/hooks/useEstoque'
 import { useVendaBalcao, useRegistrarOrcamento } from '../hooks/useVenda'
 import { useTurno } from '@/modules/financeiro/hooks/useTurno'
 import { useClientes } from '@/modules/cliente/hooks/useClientes'
+import { usePromocoesPorProduto } from '@/modules/promocao/hooks/usePromocao'
 import type { ProdutoResponse } from '@/shared/api/produtos'
+import type { PromocaoResponse } from '@/shared/api/promocao'
 import type { VendaBalcaoResponse } from '@/shared/api/vendas'
 
 // ── Tipos internos do carrinho ──────────────────────────────────────────────
@@ -111,6 +113,30 @@ interface AddItemModalProps {
 
 type ModoVenda = 'metros' | 'pecas'
 
+function calcularPrecoPromocional(p: PromocaoResponse, precoBase: number): number {
+  if (p.tipo === 'DESCONTO_PERCENTUAL') return precoBase * (1 - p.valor / 100)
+  if (p.tipo === 'DESCONTO_FIXO') return Math.max(0, precoBase - p.valor)
+  return p.valor // PRECO_FIXO
+}
+
+function melhorPromocao(
+  promocoes: PromocaoResponse[],
+  precoBase: number,
+  quantidade: number,
+): PromocaoResponse | null {
+  const vigentes = promocoes.filter((p) => {
+    if (!p.vigente) return false
+    if (p.quantidadeMinima != null && quantidade < p.quantidadeMinima) return false
+    return true
+  })
+  if (vigentes.length === 0) return null
+  return vigentes.reduce((best, p) => {
+    const descBest = precoBase - calcularPrecoPromocional(best, precoBase)
+    const descP    = precoBase - calcularPrecoPromocional(p, precoBase)
+    return descP > descBest ? p : best
+  })
+}
+
 function AddItemModal({ produto, onClose, onAdicionar, tipoPessoa, tipoPagamento }: AddItemModalProps) {
   const [modo, setModo] = useState<ModoVenda>('metros')
   const [metros, setMetros] = useState('')
@@ -119,7 +145,8 @@ function AddItemModal({ produto, onClose, onAdicionar, tipoPessoa, tipoPagamento
   const [preco, setPreco] = useState('')
   const [errors, setErrors] = useState<{ quantidade?: string; preco?: string }>({})
 
-  const { data: precificacao } = usePrecificacao(produto?.id ?? '')
+  const { data: precificacao }  = usePrecificacao(produto?.id ?? '')
+  const { data: promocoesProd } = usePromocoesPorProduto(produto?.id ?? null)
 
   useEffect(() => {
     setPreco(produto?.precoVenda ? parseFloat(produto.precoVenda).toFixed(2) : '')
@@ -170,6 +197,17 @@ function AddItemModal({ produto, onClose, onAdicionar, tipoPessoa, tipoPagamento
   const metrosEfetivosValidos = metrosEfetivos != null && metrosEfetivos > 0
   const qtdValida = !isNaN(qtdNum) && qtdNum > 0
   const precoValido = !isNaN(precoNum) && precoNum > 0
+
+  // ── Promoção aplicável ──────────────────────────────────────────────────────
+  const qtdParaPromocao = isMadeira
+    ? (metrosEfetivos ?? 0)
+    : (qtdValida ? qtdNum : 0)
+  const promocaoAtiva = promocoesProd && precoValido
+    ? melhorPromocao(promocoesProd, precoNum, qtdParaPromocao)
+    : null
+  const precoPromocional = promocaoAtiva
+    ? calcularPrecoPromocional(promocaoAtiva, precoNum)
+    : null
 
   let volumeM3Preview: number | null = null
   if (isMadeira && temDimensoes && metrosEfetivosValidos && espessuraM && larguraM) {
@@ -329,6 +367,21 @@ function AddItemModal({ produto, onClose, onAdicionar, tipoPessoa, tipoPagamento
             <p className="text-xs text-muted-foreground">
               Tabela: {tipoPessoa === 'PJ' ? 'PJ' : 'PF'} · {tipoPagamento === 'PRAZO' ? 'A Prazo' : 'À Vista'}
             </p>
+          )}
+          {promocaoAtiva && precoPromocional != null && (
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-700/40 dark:bg-emerald-950/30 px-3 py-2">
+              <span className="flex-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                🏷️ {promocaoAtiva.nome} — preço promocional: <strong>R$ {precoPromocional.toFixed(2)}</strong>
+                {promocaoAtiva.tipo === 'DESCONTO_PERCENTUAL' && ` (${promocaoAtiva.valor}% off)`}
+              </span>
+              <button
+                type="button"
+                className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 underline hover:no-underline shrink-0"
+                onClick={() => setPreco(precoPromocional.toFixed(2))}
+              >
+                Aplicar
+              </button>
+            </div>
           )}
         </div>
 

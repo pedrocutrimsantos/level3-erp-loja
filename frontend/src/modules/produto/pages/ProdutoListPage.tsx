@@ -7,6 +7,7 @@ import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Card, CardContent } from '@/shared/components/ui/Card'
+import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
 
 function TableSkeleton() {
   return (
@@ -35,18 +36,19 @@ export default function ProdutoListPage() {
         }
       />
 
-      {/* Filtro */}
-      <div className="mb-4 flex items-center gap-2">
-        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-            checked={apenasAtivos}
-            onChange={(e) => setApenasAtivos(e.target.checked)}
-          />
-          Apenas ativos
-        </label>
-      </div>
+      <FilterBar className="mb-4">
+        <FilterField label="Filtrar">
+          <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none h-8">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              checked={apenasAtivos}
+              onChange={(e) => setApenasAtivos(e.target.checked)}
+            />
+            Apenas ativos
+          </label>
+        </FilterField>
+      </FilterBar>
 
       <Card>
         <CardContent className="p-0">

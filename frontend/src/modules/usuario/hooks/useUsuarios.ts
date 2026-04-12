@@ -4,6 +4,7 @@ import {
   type CriarUsuarioDto,
   type AtualizarUsuarioDto,
 } from '@/shared/api/usuarios'
+import { authApi } from '@/shared/api/auth'
 import { useToast } from '@/shared/store/toastStore'
 import { erroMsg } from '@/shared/utils/erroMsg'
 
@@ -78,6 +79,19 @@ export function useDesativarUsuario() {
     },
     onError: (err: unknown) => {
       toast.erro(erroMsg(err, 'Erro ao desativar usuário'))
+    },
+  })
+}
+
+export function useReenviarPrimeiroAcesso() {
+  const toast = useToast()
+  return useMutation({
+    mutationFn: (email: string) => authApi.primeiroAcessoReenviar(email),
+    onSuccess: () => {
+      toast.sucesso('Código de primeiro acesso reenviado via WhatsApp')
+    },
+    onError: (err: unknown) => {
+      toast.erro(erroMsg(err, 'Não foi possível reenviar o código'))
     },
   })
 }

@@ -6,6 +6,7 @@ import br.com.madeireira.modules.financeiro.api.dto.CriarDespesaRequest
 import br.com.madeireira.modules.financeiro.api.dto.FluxoCaixaResponse
 import br.com.madeireira.modules.financeiro.api.dto.LancamentoFluxoResponse
 import br.com.madeireira.modules.financeiro.api.dto.ResumoPagarResponse
+import br.com.madeireira.modules.financeiro.api.dto.ResumoReceberResponse
 import br.com.madeireira.modules.financeiro.api.dto.TituloResponse
 import br.com.madeireira.modules.financeiro.domain.model.FormaPagamento
 import br.com.madeireira.modules.financeiro.domain.model.ParcelaFinanceira
@@ -139,6 +140,17 @@ class TituloService(
         val hoje = LocalDate.now()
         val sums = tituloRepo.sumParcelasAbertasPagar(hoje)
         return ResumoPagarResponse(
+            totalAberto      = (sums["total"]   ?: BigDecimal.ZERO).toPlainString(),
+            totalVencido     = (sums["vencido"] ?: BigDecimal.ZERO).toPlainString(),
+            totalVenceHoje   = (sums["hoje"]    ?: BigDecimal.ZERO).toPlainString(),
+            totalVenceSemana = (sums["semana"]  ?: BigDecimal.ZERO).toPlainString(),
+        )
+    }
+
+    suspend fun resumoReceber(): ResumoReceberResponse {
+        val hoje = LocalDate.now()
+        val sums = tituloRepo.sumParcelasAbertasReceber(hoje)
+        return ResumoReceberResponse(
             totalAberto      = (sums["total"]   ?: BigDecimal.ZERO).toPlainString(),
             totalVencido     = (sums["vencido"] ?: BigDecimal.ZERO).toPlainString(),
             totalVenceHoje   = (sums["hoje"]    ?: BigDecimal.ZERO).toPlainString(),

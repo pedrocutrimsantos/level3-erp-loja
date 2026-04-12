@@ -12,6 +12,7 @@ data class UsuarioResponse(
     val perfilDescricao: String,
     val vendedor: Boolean,
     val ativo: Boolean,
+    val primeiroAcessoPendente: Boolean,
     val ultimoAcesso: String?,
     val createdAt: String,
 )
@@ -20,10 +21,9 @@ data class UsuarioResponse(
 data class CriarUsuarioDto(
     val nome: String,
     val email: String,
-    val senha: String,
+    val telefone: String,               // obrigatório — token de 1º acesso enviado via WhatsApp
     val perfilCodigo: String,
     val vendedor: Boolean = false,
-    val telefone: String? = null,
 )
 
 @Serializable

@@ -11,8 +11,16 @@ import br.com.madeireira.modules.produto.domain.model.TipoProduto
 import br.com.madeireira.modules.produto.infrastructure.DimensaoMadeiraTable
 import br.com.madeireira.modules.produto.infrastructure.ProdutoTable
 import br.com.madeireira.modules.produto.infrastructure.UnidadeMedidaTable
+import br.com.madeireira.modules.devolucao.infrastructure.DevolucaoTable
+import br.com.madeireira.modules.financeiro.domain.model.StatusParcela
+import br.com.madeireira.modules.financeiro.infrastructure.ParcelaFinanceiraTable
 import br.com.madeireira.modules.relatorio.api.dto.DashboardResponse
+import br.com.madeireira.modules.relatorio.api.dto.DreCategoriaDto
+import br.com.madeireira.modules.relatorio.api.dto.DreResponse
+import br.com.madeireira.modules.relatorio.api.dto.MargemPeriodoDetalhe
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioMargemLinha
+import br.com.madeireira.modules.relatorio.api.dto.RelatorioMargemPeriodoLinha
+import br.com.madeireira.modules.relatorio.api.dto.RelatorioMargemPeriodoResponse
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioMargemResponse
 import br.com.madeireira.modules.relatorio.api.dto.EstoqueCriticoItem
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioEstoqueLinha
@@ -214,6 +222,286 @@ class RelatorioService {
             dataFim       = dataFim.toString(),
             totalEntradas = totalEntradas.toPlainString(),
             linhas        = linhas,
+        )
+    }
+
+    // ── DRE ───────────────────────────────────────────────────────────────────
+
+    suspend fun dre(dataInicio: LocalDate, dataFim: LocalDate): DreResponse = dbQuery {
+        val brt    = ZoneOffset.ofHours(-3)
+        val inicio = dataInicio.atStartOfDay(brt).toInstant()
+        val fim    = dataFim.plusDays(1).atStartOfDay(brt).toInstant()
+
+        // ── 1. Receita Bruta ──────────────────────────────────────────────────
+        val vendasRows = VendaTable
+            .select {
+                (VendaTable.status eq StatusVenda.CONFIRMADO) and
+                (VendaTable.createdAt greaterEq inicio.toKotlin()) and
+                (VendaTable.createdAt less fim.toKotlin())
+            }
+            .toList()
+
+        val receitaBruta = vendasRows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r[VendaTable.valorTotal]) }
+        val qtdVendas    = vendasRows.size
+
+        // ── 2. Devoluções ─────────────────────────────────────────────────────
+        val devolucaoRows = DevolucaoTable
+            .select {
+                (DevolucaoTable.createdAt greaterEq inicio.toKotlin()) and
+                (DevolucaoTable.createdAt less fim.toKotlin())
+            }
+            .toList()
+
+        val totalDevolucoes = devolucaoRows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r[DevolucaoTable.valorTotal]) }
+        val qtdDevolucoes   = devolucaoRows.size
+
+        // ── 3. Receita Líquida ────────────────────────────────────────────────
+        val receitaLiquida = receitaBruta.subtract(totalDevolucoes)
+
+        // ── 4. CMV (custo médio atual × quantidade vendida) ───────────────────
+        val vendaIds = vendasRows.map { it[VendaTable.id] }
+        val cmv: BigDecimal = if (vendaIds.isEmpty()) BigDecimal.ZERO else {
+            ItemVendaTable
+                .join(
+                    EstoqueSaldoTable,
+                    JoinType.LEFT,
+                    onColumn    = ItemVendaTable.produtoId,
+                    otherColumn = EstoqueSaldoTable.produtoId,
+                    additionalConstraint = { EstoqueSaldoTable.depositoId eq DEPOSITO_PADRAO },
+                )
+                .select { ItemVendaTable.vendaId inList vendaIds }
+                .toList()
+                .fold(BigDecimal.ZERO) { acc, row ->
+                    val custoM3 = row.getOrNull(EstoqueSaldoTable.custoMedioM3) ?: return@fold acc
+                    val tipo    = row[ItemVendaTable.tipoProduto]
+                    val custo   = when (tipo) {
+                        TipoProduto.MADEIRA ->
+                            (row[ItemVendaTable.volumeM3Calculado] ?: BigDecimal.ZERO).multiply(custoM3)
+                        TipoProduto.NORMAL  ->
+                            (row[ItemVendaTable.quantidadeUnidade]  ?: BigDecimal.ZERO).multiply(custoM3)
+                    }
+                    acc.add(custo)
+                }
+        }
+
+        // ── 5. Lucro Bruto ────────────────────────────────────────────────────
+        val lucroBruto  = receitaLiquida.subtract(cmv)
+        val margemBruta = if (receitaLiquida > BigDecimal.ZERO)
+            lucroBruto.divide(receitaLiquida, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal("100"))
+                .setScale(2, RoundingMode.HALF_UP)
+        else BigDecimal.ZERO
+
+        // ── 6. Despesas operacionais (parcelas pagas de títulos a pagar) ──────
+        val despesasRows = (ParcelaFinanceiraTable innerJoin TituloFinanceiroTable)
+            .select {
+                (TituloFinanceiroTable.tipo eq TipoTitulo.PAGAR) and
+                (ParcelaFinanceiraTable.status eq StatusParcela.PAGO) and
+                (ParcelaFinanceiraTable.dataPagamento greaterEq dataInicio.toKotlinDate()) and
+                (ParcelaFinanceiraTable.dataPagamento lessEq dataFim.toKotlinDate())
+            }
+            .toList()
+
+        val despesasPorCategoria = despesasRows
+            .groupBy { row -> row[TituloFinanceiroTable.categoria] ?: "Sem Categoria" }
+            .map { (categoria, rows) ->
+                val valor = rows.fold(BigDecimal.ZERO) { acc, r ->
+                    acc.add(r[ParcelaFinanceiraTable.valorPago] ?: r[ParcelaFinanceiraTable.valor])
+                }
+                val pct = if (receitaLiquida > BigDecimal.ZERO)
+                    valor.divide(receitaLiquida, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal("100"))
+                        .setScale(2, RoundingMode.HALF_UP)
+                else BigDecimal.ZERO
+                DreCategoriaDto(
+                    categoria              = categoria,
+                    valor                  = valor.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    percentualSobreReceita = pct.toPlainString(),
+                )
+            }
+            .sortedByDescending { BigDecimal(it.valor) }
+
+        val totalDespesas = despesasPorCategoria
+            .fold(BigDecimal.ZERO) { acc, d -> acc.add(BigDecimal(d.valor)) }
+
+        // ── 7. Resultado Operacional ──────────────────────────────────────────
+        val resultadoOperacional = lucroBruto.subtract(totalDespesas)
+        val margemOperacional    = if (receitaLiquida > BigDecimal.ZERO)
+            resultadoOperacional.divide(receitaLiquida, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal("100"))
+                .setScale(2, RoundingMode.HALF_UP)
+        else BigDecimal.ZERO
+
+        val ticketMedio = if (qtdVendas > 0)
+            receitaBruta.divide(BigDecimal(qtdVendas), 2, RoundingMode.HALF_UP)
+        else BigDecimal.ZERO
+
+        DreResponse(
+            dataInicio           = dataInicio.toString(),
+            dataFim              = dataFim.toString(),
+            geradoEm             = LocalDate.now().toString(),
+            receitaBruta         = receitaBruta.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            devolucoes           = totalDevolucoes.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            receitaLiquida       = receitaLiquida.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            custoMercadorias     = cmv.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            cmvEstimado          = true,
+            lucroBruto           = lucroBruto.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            margemBruta          = margemBruta.toPlainString(),
+            despesas             = despesasPorCategoria,
+            totalDespesas        = totalDespesas.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            resultadoOperacional = resultadoOperacional.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            margemOperacional    = margemOperacional.toPlainString(),
+            resultadoPositivo    = resultadoOperacional >= BigDecimal.ZERO,
+            quantidadeVendas     = qtdVendas,
+            ticketMedio          = ticketMedio.toPlainString(),
+            quantidadeDevolucoes = qtdDevolucoes,
+        )
+    }
+
+    // ── Relatório de Margem por Período ──────────────────────────────────────
+
+    suspend fun margemPeriodo(dataInicio: LocalDate, dataFim: LocalDate): RelatorioMargemPeriodoResponse = dbQuery {
+        val brt    = ZoneOffset.ofHours(-3)
+        val inicio = dataInicio.atStartOfDay(brt).toInstant()
+        val fim    = dataFim.plusDays(1).atStartOfDay(brt).toInstant()
+
+        // vendas confirmadas no período
+        val vendasRows = VendaTable
+            .select {
+                (VendaTable.status eq StatusVenda.CONFIRMADO) and
+                (VendaTable.createdAt greaterEq inicio.toKotlin()) and
+                (VendaTable.createdAt less fim.toKotlin())
+            }
+            .toList()
+
+        if (vendasRows.isEmpty()) return@dbQuery RelatorioMargemPeriodoResponse(
+            dataInicio = dataInicio.toString(), dataFim = dataFim.toString(),
+            geradoEm = LocalDate.now().toString(), totalProdutos = 0,
+            receitaTotalPeriodo = "0.00", custoTotalPeriodo = "0.00",
+            lucroBrutoPeriodo = "0.00", margemMediaPonderada = null,
+            produtosSemCusto = 0, linhas = emptyList(),
+        )
+
+        val vendaMap = vendasRows.associate { row ->
+            row[VendaTable.id] to Pair(
+                row[VendaTable.numero],
+                row[VendaTable.createdAt].toJava().atZone(brt).toLocalDate().toString(),
+            )
+        }
+
+        // itens das vendas, com produto + unidade + custo médio atual
+        val itensRows = ItemVendaTable
+            .join(ProdutoTable, JoinType.INNER, ItemVendaTable.produtoId, ProdutoTable.id)
+            .join(UnidadeMedidaTable, JoinType.INNER, ProdutoTable.unidadeMedidaId, UnidadeMedidaTable.id)
+            .join(
+                EstoqueSaldoTable,
+                JoinType.LEFT,
+                onColumn    = ItemVendaTable.produtoId,
+                otherColumn = EstoqueSaldoTable.produtoId,
+                additionalConstraint = { EstoqueSaldoTable.depositoId eq DEPOSITO_PADRAO },
+            )
+            .select { ItemVendaTable.vendaId inList vendaMap.keys.toList() }
+            .toList()
+
+        // agrupa por produto
+        val porProduto = itensRows.groupBy { it[ItemVendaTable.produtoId] }
+
+        val linhas = porProduto.map { (produtoId, rows) ->
+            val first   = rows.first()
+            val tipo    = first[ItemVendaTable.tipoProduto]
+            val unidade = if (tipo == TipoProduto.MADEIRA) "m³" else first[UnidadeMedidaTable.codigo]
+
+            // receita total do produto no período
+            val receita = rows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r[ItemVendaTable.valorTotalItem]) }
+
+            // custo estimado (custo médio atual × quantidade)
+            val custoM3 = first.getOrNull(EstoqueSaldoTable.custoMedioM3)
+            val (custo, qtdTotal) = rows.fold(BigDecimal.ZERO to BigDecimal.ZERO) { (accCusto, accQtd), row ->
+                val qty = when (tipo) {
+                    TipoProduto.MADEIRA -> row[ItemVendaTable.volumeM3Calculado]   ?: BigDecimal.ZERO
+                    TipoProduto.NORMAL  -> row[ItemVendaTable.quantidadeUnidade]   ?: BigDecimal.ZERO
+                }
+                val c   = if (custoM3 != null) qty.multiply(custoM3) else BigDecimal.ZERO
+                (accCusto.add(c)) to accQtd.add(qty)
+            }
+
+            val semCusto  = custoM3 == null
+            val lucro     = if (!semCusto) receita.subtract(custo) else null
+            val margem    = if (!semCusto && receita > BigDecimal.ZERO)
+                lucro!!.divide(receita, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal("100"))
+                    .setScale(2, RoundingMode.HALF_UP)
+                else null
+
+            val qtdVendas  = rows.map { it[ItemVendaTable.vendaId] }.distinct().size
+            val ticketMedio = if (qtdVendas > 0)
+                receita.divide(BigDecimal(qtdVendas), 2, RoundingMode.HALF_UP)
+                else BigDecimal.ZERO
+
+            // detalhe por venda
+            val detalhe = rows.groupBy { it[ItemVendaTable.vendaId] }.map { (vid, vRows) ->
+                val (numero, data) = vendaMap[vid]!!
+                val vQty = vRows.fold(BigDecimal.ZERO) { acc, r ->
+                    acc.add(when (tipo) {
+                        TipoProduto.MADEIRA -> r[ItemVendaTable.volumeM3Calculado]  ?: BigDecimal.ZERO
+                        TipoProduto.NORMAL  -> r[ItemVendaTable.quantidadeUnidade]  ?: BigDecimal.ZERO
+                    })
+                }
+                val vReceita = vRows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r[ItemVendaTable.valorTotalItem]) }
+                val vPreco   = vRows.first()[ItemVendaTable.precoUnitario]
+                val vCusto   = if (custoM3 != null) vQty.multiply(custoM3).setScale(2, RoundingMode.HALF_UP) else null
+                val vLucro   = if (vCusto != null) vReceita.subtract(vCusto).setScale(2, RoundingMode.HALF_UP) else null
+                MargemPeriodoDetalhe(
+                    vendaNumero   = numero,
+                    data          = data,
+                    quantidade    = "${vQty.setScale(3, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()} $unidade",
+                    precoUnitario = vPreco.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    valorTotal    = vReceita.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    custoEstimado = vCusto?.toPlainString(),
+                    lucroEstimado = vLucro?.toPlainString(),
+                )
+            }.sortedBy { it.data }
+
+            RelatorioMargemPeriodoLinha(
+                produtoCodigo    = first[ProdutoTable.codigo],
+                produtoDescricao = first[ProdutoTable.descricao],
+                tipo             = tipo.name,
+                unidade          = unidade,
+                quantidadeVendida = "${qtdTotal.setScale(3, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()} $unidade",
+                receitaTotal     = receita.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                custoTotal       = if (!semCusto) custo.setScale(2, RoundingMode.HALF_UP).toPlainString() else null,
+                lucroBruto       = lucro?.setScale(2, RoundingMode.HALF_UP)?.toPlainString(),
+                margemBruta      = margem?.toPlainString(),
+                ticketMedio      = ticketMedio.toPlainString(),
+                quantidadeVendas = qtdVendas,
+                semCusto         = semCusto,
+                detalhe          = detalhe,
+            )
+        }.sortedByDescending { BigDecimal(it.receitaTotal) }
+
+        // totais
+        val receitaTotal = linhas.fold(BigDecimal.ZERO) { acc, l -> acc.add(BigDecimal(l.receitaTotal)) }
+        val custoTotal   = linhas.filter { !it.semCusto }
+            .fold(BigDecimal.ZERO) { acc, l -> acc.add(BigDecimal(l.custoTotal!!)) }
+        val lucroTotal   = receitaTotal.subtract(custoTotal)
+        val margemPond   = if (receitaTotal > BigDecimal.ZERO)
+            lucroTotal.divide(receitaTotal, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal("100"))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString()
+            else null
+
+        RelatorioMargemPeriodoResponse(
+            dataInicio           = dataInicio.toString(),
+            dataFim              = dataFim.toString(),
+            geradoEm             = LocalDate.now().toString(),
+            totalProdutos        = linhas.size,
+            receitaTotalPeriodo  = receitaTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            custoTotalPeriodo    = custoTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            lucroBrutoPeriodo    = lucroTotal.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            margemMediaPonderada = margemPond,
+            produtosSemCusto     = linhas.count { it.semCusto },
+            linhas               = linhas,
         )
     }
 
@@ -455,3 +743,6 @@ private fun java.time.Instant.toKotlin() =
 
 private fun kotlinx.datetime.Instant.toJava() =
     java.time.Instant.ofEpochMilli(toEpochMilliseconds())
+
+private fun java.time.LocalDate.toKotlinDate() =
+    kotlinx.datetime.LocalDate(year, monthValue, dayOfMonth)

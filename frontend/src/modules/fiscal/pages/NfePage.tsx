@@ -1,14 +1,17 @@
 import React, { useRef, useState } from 'react'
-import { FileCheck, FileUp, Printer, Send, XCircle } from 'lucide-react'
+import { FileCheck, FileUp, Printer, RefreshCw, Send, XCircle } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
+import { Badge } from '@/shared/components/ui/Badge'
+import { Button } from '@/shared/components/ui/Button'
 import { Card, CardContent } from '@/shared/components/ui/Card'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Modal } from '@/shared/components/ui/Modal'
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/shared/components/ui/Table'
-import { Modal } from '@/shared/components/ui/Modal'
 import {
-  useCancelarNfe, useEmitirNfe, useImportarXml, useNfeLista, useNfePendentes, usePreviewXml,
+  useCancelarNfe, useEmitirNfe, useImportarXml, useNfeLista,
+  useNfePendentes, usePreviewXml, useReprocessarNfe,
 } from '../hooks/useNfe'
 import type { NfeXmlItemPreview } from '@/shared/api/nfe'
 
@@ -25,15 +28,17 @@ const STATUS_LABEL: Record<string, string> = {
   INUTILIZADA:  'Inutilizada',
 }
 
-const STATUS_COR: Record<string, string> = {
-  AUTORIZADA:   'bg-green-100 text-green-800',
-  PENDENTE:     'bg-yellow-100 text-yellow-800',
-  AGUARDANDO:   'bg-blue-100 text-blue-800',
-  REJEITADA:    'bg-red-100 text-red-800',
-  CANCELADA:    'bg-gray-100 text-gray-600',
-  DENEGADA:     'bg-red-200 text-red-900',
-  CONTINGENCIA: 'bg-orange-100 text-orange-800',
-  INUTILIZADA:  'bg-gray-100 text-gray-600',
+type BadgeVariant = 'default' | 'success' | 'destructive' | 'warning' | 'outline'
+
+const STATUS_VARIANT: Record<string, BadgeVariant> = {
+  AUTORIZADA:   'success',
+  AGUARDANDO:   'default',
+  PENDENTE:     'warning',
+  REJEITADA:    'destructive',
+  DENEGADA:     'destructive',
+  CANCELADA:    'outline',
+  CONTINGENCIA: 'warning',
+  INUTILIZADA:  'outline',
 }
 
 const FORMA_LABEL: Record<string, string> = {
@@ -57,8 +62,6 @@ function formatarDataHora(iso: string) {
   })
 }
 
-// ── Componente principal ───────────────────────────────────────────────────────
-
 // ── Produto Selector ──────────────────────────────────────────────────────────
 
 function ProdutoSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -68,33 +71,34 @@ function ProdutoSelect({ value, onChange }: { value: string; onChange: (v: strin
       placeholder="UUID do produto no sistema"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded border border-border px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40"
+      className="w-full rounded border border-border bg-background px-2 py-1 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
     />
   )
 }
 
-// ── Componente principal ───────────────────────────────────────────────────────
+// ── Componente principal ──────────────────────────────────────────────────────
 
 export default function NfePage() {
-  const { data: nfs, isLoading: loadingNfs } = useNfeLista()
+  const { data: nfs,      isLoading: loadingNfs  } = useNfeLista()
   const { data: pendentes, isLoading: loadingPend } = useNfePendentes()
-  const emitir    = useEmitirNfe()
-  const cancelar  = useCancelarNfe()
+  const emitir       = useEmitirNfe()
+  const cancelar     = useCancelarNfe()
+  const reprocessar  = useReprocessarNfe()
   const previewXml   = usePreviewXml()
   const importarXml  = useImportarXml()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [modalCancelar, setModalCancelar] = useState<{ id: string; numero: number } | null>(null)
-  const [justificativa, setJustificativa] = useState('')
-  const [erroCancelar, setErroCancelar] = useState('')
+  const [modalCancelar, setModalCancelar]   = useState<{ id: string; numero: number } | null>(null)
+  const [justificativa, setJustificativa]   = useState('')
+  const [erroCancelar, setErroCancelar]     = useState('')
 
   // XML import state
-  const [modalXml, setModalXml]         = useState(false)
-  const [xmlPreview, setXmlPreview]     = useState<ReturnType<typeof usePreviewXml>['data']>(undefined)
-  const [xmlMeta, setXmlMeta]           = useState<{ chaveAcesso: string | null; emitenteCnpj: string; emitenteNome: string } | null>(null)
-  const [mapeamento, setMapeamento]     = useState<Record<number, string>>({})
-  const [erroImport, setErroImport]     = useState<string[]>([])
-  const [importOk, setImportOk]         = useState<number | null>(null)
+  const [modalXml, setModalXml]     = useState(false)
+  const [xmlPreview, setXmlPreview] = useState<ReturnType<typeof usePreviewXml>['data']>(undefined)
+  const [xmlMeta, setXmlMeta]       = useState<{ chaveAcesso: string | null; emitenteCnpj: string; emitenteNome: string } | null>(null)
+  const [mapeamento, setMapeamento] = useState<Record<number, string>>({})
+  const [erroImport, setErroImport] = useState<string[]>([])
+  const [importOk, setImportOk]     = useState<number | null>(null)
 
   function handleArquivoXml(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -126,7 +130,7 @@ export default function NfePage() {
           setImportOk(resp.itensImportados)
           setErroImport(resp.erros)
         },
-      }
+      },
     )
   }
 
@@ -139,41 +143,49 @@ export default function NfePage() {
     cancelar.mutate(
       { id: modalCancelar.id, justificativa: justificativa.trim() },
       {
-        onSuccess: () => {
-          setModalCancelar(null)
-          setJustificativa('')
-          setErroCancelar('')
-        },
+        onSuccess: () => { setModalCancelar(null); setJustificativa(''); setErroCancelar('') },
         onError: (err: unknown) => {
-          setErroCancelar(err instanceof Error ? err.message : 'Erro ao cancelar')
+          setErroCancelar((err as any)?.response?.data?.detalhes ?? 'Erro ao cancelar NF-e.')
         },
-      }
+      },
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <PageHeader title="NF-e" subtitle="Emissão e controle de notas fiscais eletrônicas" />
-        <button
-          onClick={() => { setModalXml(true); setXmlPreview(undefined); setImportOk(null); setErroImport([]) }}
-          className="mt-1 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
-        >
-          <FileUp className="h-4 w-4" />
-          Importar XML
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="NF-e"
+        subtitle="Emissão e controle de notas fiscais eletrônicas"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setModalXml(true); setXmlPreview(undefined); setImportOk(null); setErroImport([]) }}
+          >
+            <FileUp className="h-3.5 w-3.5" />
+            Importar XML
+          </Button>
+        }
+      />
+
       <input ref={fileInputRef} type="file" accept=".xml" className="hidden" onChange={handleArquivoXml} />
 
-      {/* Vendas pendentes de NF */}
+      {/* ── Vendas aguardando emissão ── */}
       <Card>
         <CardContent className="p-5">
-          <p className="mb-4 text-sm font-semibold text-gray-700">
-            Vendas aguardando emissão de NF-e
-          </p>
+          <div className="mb-4">
+            <p className="text-sm font-semibold text-foreground dark:text-[#e2e8f0]">
+              Vendas aguardando emissão de NF-e
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Vendas confirmadas ainda sem nota fiscal eletrônica
+            </p>
+          </div>
 
           {loadingPend ? (
-            <div className="animate-pulse h-32 rounded bg-gray-100" />
+            <div className="animate-pulse space-y-2">
+              {[1, 2, 3].map((i) => <div key={i} className="h-10 rounded bg-muted" />)}
+            </div>
           ) : !pendentes || pendentes.length === 0 ? (
             <EmptyState
               icon={<FileCheck className="h-5 w-5" />}
@@ -209,14 +221,14 @@ export default function NfePage() {
                       {formatarReais(v.valorTotal)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <button
+                      <Button
+                        size="sm"
                         onClick={() => emitir.mutate(v.vendaId)}
-                        disabled={emitir.isPending}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-primary-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                        loading={emitir.isPending}
                       >
                         <Send className="h-3 w-3" />
                         Emitir NF-e
-                      </button>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -226,11 +238,13 @@ export default function NfePage() {
         </CardContent>
       </Card>
 
-      {/* NF-e emitidas */}
+      {/* ── NF-e emitidas ── */}
       <Card>
         <CardContent className="p-0">
           {loadingNfs ? (
-            <div className="animate-pulse m-5 h-40 rounded bg-gray-100" />
+            <div className="animate-pulse space-y-2 m-5">
+              {[1, 2, 3, 4].map((i) => <div key={i} className="h-10 rounded bg-muted" />)}
+            </div>
           ) : !nfs || nfs.length === 0 ? (
             <EmptyState
               icon={<FileCheck className="h-5 w-5" />}
@@ -261,40 +275,67 @@ export default function NfePage() {
                       {nf.vendaNumero ?? '—'}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COR[nf.statusSefaz] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <Badge variant={STATUS_VARIANT[nf.statusSefaz] ?? 'outline'}>
                         {STATUS_LABEL[nf.statusSefaz] ?? nf.statusSefaz}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${nf.ambiente === 'PRODUCAO' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-700'}`}>
+                      <Badge variant={nf.ambiente === 'PRODUCAO' ? 'success' : 'warning'}>
                         {nf.ambiente === 'PRODUCAO' ? 'Produção' : 'Homologação'}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatarDataHora(nf.dataEmissao)}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {nf.chaveAcesso
-                        ? `${nf.chaveAcesso.slice(0, 8)}...${nf.chaveAcesso.slice(-4)}`
+                        ? `${nf.chaveAcesso.slice(0, 8)}…${nf.chaveAcesso.slice(-4)}`
                         : '—'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => window.open(`/fiscal/nfe/${nf.id}/danfe`, '_blank')}
-                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
-                        >
-                          <Printer className="h-3 w-3" />
-                          DANFE
-                        </button>
-                        {nf.statusSefaz === 'AUTORIZADA' && (
-                          <button
-                            onClick={() => setModalCancelar({ id: nf.id, numero: nf.numero })}
-                            className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Reprocessar — só para NF em AGUARDANDO */}
+                        {nf.statusSefaz === 'AGUARDANDO' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => reprocessar.mutate(nf.id)}
+                            loading={reprocessar.isPending}
+                            title="Consultar status na SEFAZ"
                           >
-                            <XCircle className="h-3 w-3" />
+                            <RefreshCw className="h-3 w-3" />
+                            Reprocessar
+                          </Button>
+                        )}
+                        {/* DANFE */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`/fiscal/nfe/${nf.id}/danfe`, '_blank')}
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                          DANFE
+                        </Button>
+                        {/* Cancelar — só para AUTORIZADA */}
+                        {nf.statusSefaz === 'AUTORIZADA' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setModalCancelar({ id: nf.id, numero: nf.numero })}
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
                             Cancelar
-                          </button>
+                          </Button>
+                        )}
+                        {/* Motivo de rejeição — tooltip via title */}
+                        {(nf.statusSefaz === 'REJEITADA' || nf.statusSefaz === 'DENEGADA') && nf.motivoRejeicao && (
+                          <span
+                            title={nf.motivoRejeicao}
+                            className="cursor-help text-xs text-destructive underline decoration-dotted"
+                          >
+                            ver motivo
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -306,7 +347,7 @@ export default function NfePage() {
         </CardContent>
       </Card>
 
-      {/* Modal importação XML */}
+      {/* ── Modal importação XML ── */}
       {modalXml && (
         <Modal
           open={modalXml}
@@ -316,16 +357,15 @@ export default function NfePage() {
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">
             {!xmlPreview && !previewXml.isPending && (
               <div className="flex flex-col items-center gap-3 py-6">
-                <FileUp className="h-10 w-10 text-muted-foreground" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                  <FileUp className="h-6 w-6 text-muted-foreground" />
+                </div>
                 <p className="text-sm text-muted-foreground text-center">
                   Selecione o arquivo XML da NF-e de entrada (compra/fornecedor)
                 </p>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                >
+                <Button onClick={() => fileInputRef.current?.click()}>
                   Selecionar XML
-                </button>
+                </Button>
               </div>
             )}
 
@@ -337,10 +377,18 @@ export default function NfePage() {
 
             {xmlPreview && importOk === null && (
               <>
-                <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1">
-                  <div><span className="text-muted-foreground">Emitente:</span> <strong>{xmlPreview.emitenteNome}</strong> — {xmlPreview.emitenteCnpj}</div>
-                  <div><span className="text-muted-foreground">Valor Total:</span> <strong>R$ {parseFloat(xmlPreview.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></div>
-                  {xmlPreview.chaveAcesso && <div className="font-mono text-xs text-muted-foreground">{xmlPreview.chaveAcesso}</div>}
+                <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1 text-foreground dark:text-[#e2e8f0]">
+                  <div>
+                    <span className="text-muted-foreground">Emitente: </span>
+                    <strong>{xmlPreview.emitenteNome}</strong> — {xmlPreview.emitenteCnpj}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Valor Total: </span>
+                    <strong>R$ {parseFloat(xmlPreview.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                  {xmlPreview.chaveAcesso && (
+                    <div className="font-mono text-xs text-muted-foreground">{xmlPreview.chaveAcesso}</div>
+                  )}
                 </div>
 
                 <p className="text-xs font-medium text-muted-foreground">
@@ -350,20 +398,20 @@ export default function NfePage() {
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-muted/40">
-                      <th className="border border-border px-2 py-1 text-left">#</th>
-                      <th className="border border-border px-2 py-1 text-left">Descrição (fornecedor)</th>
-                      <th className="border border-border px-2 py-1 text-right">Qtd</th>
-                      <th className="border border-border px-2 py-1 text-right">Vl. Unit.</th>
-                      <th className="border border-border px-2 py-1">Produto (ID sistema)</th>
+                      <th className="border border-border px-2 py-1 text-left text-foreground">#</th>
+                      <th className="border border-border px-2 py-1 text-left text-foreground">Descrição (fornecedor)</th>
+                      <th className="border border-border px-2 py-1 text-right text-foreground">Qtd</th>
+                      <th className="border border-border px-2 py-1 text-right text-foreground">Vl. Unit.</th>
+                      <th className="border border-border px-2 py-1 text-foreground">Produto (ID sistema)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {xmlPreview.itens.map((item: NfeXmlItemPreview) => (
-                      <tr key={item.numeroItem}>
-                        <td className="border border-border px-2 py-1 text-center">{item.numeroItem}</td>
-                        <td className="border border-border px-2 py-1">{item.descricao}</td>
-                        <td className="border border-border px-2 py-1 text-right tabular-nums">{item.quantidade}</td>
-                        <td className="border border-border px-2 py-1 text-right tabular-nums">{item.valorUnitario}</td>
+                      <tr key={item.numeroItem} className="border-b border-border/50">
+                        <td className="border border-border px-2 py-1 text-center text-foreground">{item.numeroItem}</td>
+                        <td className="border border-border px-2 py-1 text-foreground">{item.descricao}</td>
+                        <td className="border border-border px-2 py-1 text-right tabular-nums text-foreground">{item.quantidade}</td>
+                        <td className="border border-border px-2 py-1 text-right tabular-nums text-foreground">{item.valorUnitario}</td>
                         <td className="border border-border px-1 py-0.5">
                           <ProdutoSelect
                             value={mapeamento[item.numeroItem] ?? ''}
@@ -376,47 +424,43 @@ export default function NfePage() {
                 </table>
 
                 {erroImport.length > 0 && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 space-y-1">
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive space-y-1">
                     {erroImport.map((e, i) => <div key={i}>{e}</div>)}
                   </div>
                 )}
 
                 <div className="flex justify-end gap-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => { setXmlPreview(undefined); fileInputRef.current?.click() }}
-                    className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/50"
                   >
                     Trocar XML
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    size="sm"
                     onClick={handleConfirmarImport}
-                    disabled={importarXml.isPending}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                    loading={importarXml.isPending}
                   >
-                    {importarXml.isPending ? 'Importando...' : 'Confirmar e Atualizar Estoque'}
-                  </button>
+                    Confirmar e Atualizar Estoque
+                  </Button>
                 </div>
               </>
             )}
 
             {importOk !== null && (
               <div className="space-y-3 py-4">
-                <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
                   <strong>{importOk} item(s) importado(s)</strong> com sucesso. Estoque atualizado.
                 </div>
                 {erroImport.length > 0 && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 space-y-1">
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive space-y-1">
                     <div className="font-medium">Itens com erro:</div>
                     {erroImport.map((e, i) => <div key={i}>{e}</div>)}
                   </div>
                 )}
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => setModalXml(false)}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                  >
-                    Fechar
-                  </button>
+                  <Button onClick={() => setModalXml(false)}>Fechar</Button>
                 </div>
               </div>
             )}
@@ -424,42 +468,49 @@ export default function NfePage() {
         </Modal>
       )}
 
-      {/* Modal cancelamento */}
+      {/* ── Modal cancelamento ── */}
       {modalCancelar && (
         <Modal
           open={!!modalCancelar}
           title={`Cancelar NF ${modalCancelar.numero.toString().padStart(9, '0')}`}
           onClose={() => { setModalCancelar(null); setJustificativa(''); setErroCancelar('') }}
+          footer={
+            <>
+              <Button
+                variant="outline"
+                onClick={() => { setModalCancelar(null); setJustificativa(''); setErroCancelar('') }}
+                disabled={cancelar.isPending}
+              >
+                Voltar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelar}
+                loading={cancelar.isPending}
+              >
+                Confirmar cancelamento
+              </Button>
+            </>
+          }
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Justificativa <span className="text-muted-foreground font-normal">(mínimo 15 caracteres)</span>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Justificativa{' '}
+                <span className="text-muted-foreground font-normal">(mínimo 15 caracteres)</span>
               </label>
               <textarea
-                className="w-full rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none dark:bg-[#0d1117] dark:border-[#243040]"
                 rows={3}
                 value={justificativa}
                 onChange={(e) => { setJustificativa(e.target.value); setErroCancelar('') }}
                 placeholder="Motivo do cancelamento..."
               />
-              {erroCancelar && <p className="mt-1 text-xs text-red-600">{erroCancelar}</p>}
+              {erroCancelar && <p className="mt-1 text-xs text-destructive">{erroCancelar}</p>}
             </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => { setModalCancelar(null); setJustificativa(''); setErroCancelar('') }}
-                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted/50 transition-colors"
-              >
-                Voltar
-              </button>
-              <button
-                onClick={handleCancelar}
-                disabled={cancelar.isPending}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {cancelar.isPending ? 'Cancelando...' : 'Confirmar cancelamento'}
-              </button>
-            </div>
+            <p className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+              O cancelamento é irreversível e só é aceito pela SEFAZ dentro de 24 horas após a emissão.
+            </p>
           </div>
         </Modal>
       )}

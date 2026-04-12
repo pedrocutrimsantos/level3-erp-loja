@@ -28,12 +28,14 @@ export default function LoginPage() {
       } else if (err.response.status === 400) {
         setErro(err.response.data?.detalhes ?? 'Requisição inválida.')
       } else {
-        setErro(err.response.data?.erro ?? 'Erro interno. Tente novamente.')
+        setErro(err.response.data?.detalhes ?? err.response.data?.erro ?? 'Erro interno. Tente novamente.')
       }
     } finally {
       setLoading(false)
     }
   }
+
+  const erroPrimeiroAcesso = erro != null && /primeiro acesso/i.test(erro)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -84,9 +86,17 @@ export default function LoginPage() {
           </div>
 
           {erro && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {erro}
-            </p>
+            <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p>{erro}</p>
+              {erroPrimeiroAcesso && (
+                <Link
+                  to="/primeiro-acesso"
+                  className="mt-1 inline-block font-semibold underline hover:opacity-80"
+                >
+                  Concluir primeiro acesso →
+                </Link>
+              )}
+            </div>
           )}
 
           <button
@@ -97,12 +107,19 @@ export default function LoginPage() {
             {loading ? 'Entrando…' : 'Entrar'}
           </button>
 
-          <div className="text-center">
+          <div className="flex items-center justify-center gap-4 text-sm">
             <Link
               to="/esqueci-senha"
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              className="text-muted-foreground hover:text-primary transition-colors"
             >
               Esqueci minha senha
+            </Link>
+            <span className="text-border">·</span>
+            <Link
+              to="/primeiro-acesso"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              Primeiro acesso
             </Link>
           </div>
         </form>

@@ -29,6 +29,11 @@ fun Route.tituloRoutes(service: TituloService) {
             call.respond(HttpStatusCode.OK, service.resumoPagar())
         }
 
+        // GET /api/v1/financeiro/resumo-receber
+        get("/api/v1/financeiro/resumo-receber") {
+            call.respond(HttpStatusCode.OK, service.resumoReceber())
+        }
+
         route("/api/v1/titulos") {
 
             // POST /api/v1/titulos  (despesa manual)

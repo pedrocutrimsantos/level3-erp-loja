@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Pencil, X, Check, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
+import { DetailGrid } from '@/shared/components/layout/PageLayout'
 import { Button } from '@/shared/components/ui/Button'
 import { Input } from '@/shared/components/ui/Input'
 import { Badge } from '@/shared/components/ui/Badge'
@@ -591,6 +592,18 @@ export default function ProdutoDetalhePage() {
       <PageHeader
         title={isLoading ? 'Carregando…' : (produto?.descricao ?? 'Produto')}
         subtitle={produto ? `Código: ${produto.codigo}` : undefined}
+        badge={
+          produto ? (
+            <>
+              <Badge variant={produto.tipo === 'MADEIRA' ? 'default' : 'outline'}>
+                {produto.tipo === 'MADEIRA' ? 'Madeira' : 'Normal'}
+              </Badge>
+              <Badge variant={produto.ativo ? 'success' : 'destructive'}>
+                {produto.ativo ? 'Ativo' : 'Inativo'}
+              </Badge>
+            </>
+          ) : undefined
+        }
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/produtos')}>
@@ -606,15 +619,15 @@ export default function ProdutoDetalhePage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Coluna esquerda — dados e dimensões */}
+      <DetailGrid>
+        {/* Coluna principal (60%) — dados, dimensões, precificação */}
         <div className="flex flex-col gap-6">
           <DadosCard produtoId={id} />
           <DimensaoCard produtoId={id} />
           <PrecificacaoCard produtoId={id} tipoProduto={produto?.tipo ?? 'NORMAL'} />
         </div>
 
-        {/* Coluna direita — saldo e movimentações */}
+        {/* Coluna lateral (40%) — saldo e movimentações */}
         <div className="flex flex-col gap-6">
           <SaldoCard produtoId={id} tipo={produto?.tipo ?? 'NORMAL'} />
 
@@ -634,7 +647,7 @@ export default function ProdutoDetalhePage() {
               {loadingMov ? (
                 <div className="animate-pulse space-y-2 p-4">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-8 rounded bg-gray-100" />
+                    <div key={i} className="h-8 rounded bg-muted" />
                   ))}
                 </div>
               ) : (
@@ -643,7 +656,7 @@ export default function ProdutoDetalhePage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </DetailGrid>
 
       {produto && (
         <ConfirmarInativacaoModal

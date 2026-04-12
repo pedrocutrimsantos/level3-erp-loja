@@ -12,9 +12,9 @@ export interface SaldoCardProps {
 function SaldoSkeleton() {
   return (
     <div className="animate-pulse space-y-3">
-      <div className="h-8 w-40 rounded bg-gray-200" />
-      <div className="h-5 w-28 rounded bg-gray-100" />
-      <div className="h-4 w-52 rounded bg-gray-100" />
+      <div className="h-8 w-40 rounded bg-muted" />
+      <div className="h-5 w-28 rounded bg-muted/70" />
+      <div className="h-4 w-52 rounded bg-muted/50" />
     </div>
   )
 }
@@ -58,8 +58,8 @@ function MadeiraSaldo({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-gray-900">
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-3xl font-bold text-foreground dark:text-[#e2e8f0]">
           {formatarM3(saldoNum)}
         </span>
         <span className="text-lg text-muted-foreground">m³</span>
@@ -69,7 +69,7 @@ function MadeiraSaldo({
       {metrosLineares != null && (
         <p className="text-sm text-muted-foreground">
           ≈{' '}
-          <span className="font-medium text-gray-700">
+          <span className="font-medium text-foreground dark:text-[#e2e8f0]">
             {formatarMetros(metrosLineares)}
           </span>{' '}
           metros lineares
@@ -79,7 +79,7 @@ function MadeiraSaldo({
       {pecas != null && (
         <p className="text-sm text-muted-foreground">
           ≈{' '}
-          <span className="font-semibold text-foreground">
+          <span className="font-semibold text-foreground dark:text-[#e2e8f0]">
             {pecas.toLocaleString('pt-BR')}
           </span>{' '}
           {pecas === 1 ? 'peça' : 'peças'}
@@ -94,7 +94,7 @@ function MadeiraSaldo({
       {saldo.custoMedioM3 != null && (
         <p className="text-sm text-muted-foreground">
           Custo médio:{' '}
-          <span className="font-medium text-gray-700">
+          <span className="font-medium text-foreground dark:text-[#e2e8f0]">
             R$ {parseFloat(saldo.custoMedioM3).toLocaleString('pt-BR', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -126,8 +126,8 @@ function NormalSaldo({ saldo }: { saldo: NonNullable<ReturnType<typeof useSaldoE
 
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-gray-900">
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-3xl font-bold text-foreground dark:text-[#e2e8f0]">
           {saldoNum.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
         </span>
         <span className="text-lg text-muted-foreground">{unidade}</span>

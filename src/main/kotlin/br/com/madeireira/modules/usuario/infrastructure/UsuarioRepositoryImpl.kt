@@ -23,16 +23,17 @@ import java.util.UUID
 // ── Tabelas Exposed ──────────────────────────────────────────────────────────
 
 private object UsuarioTable : Table("usuario") {
-    val id           = uuid("id").autoGenerate()
-    val nome         = varchar("nome", 120)
-    val email        = varchar("email", 120)
-    val senhaHash    = varchar("senha_hash", 255)
-    val telefone     = varchar("telefone", 20).nullable()
-    val perfilId     = uuid("perfil_id")
-    val vendedor     = bool("vendedor")
-    val ativo        = bool("ativo")
-    val ultimoAcesso = timestamp("ultimo_acesso").nullable()
-    val createdAt    = timestamp("created_at")
+    val id                     = uuid("id").autoGenerate()
+    val nome                   = varchar("nome", 120)
+    val email                  = varchar("email", 120)
+    val senhaHash              = varchar("senha_hash", 255).nullable()
+    val telefone               = varchar("telefone", 20).nullable()
+    val perfilId               = uuid("perfil_id")
+    val vendedor               = bool("vendedor")
+    val ativo                  = bool("ativo")
+    val primeiroAcessoPendente = bool("primeiro_acesso_pendente")
+    val ultimoAcesso           = timestamp("ultimo_acesso").nullable()
+    val createdAt              = timestamp("created_at")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -80,17 +81,17 @@ class UsuarioRepositoryImpl : UsuarioRepository {
             .single()[PerfilTable.id]
 
         val novoId = UUID.randomUUID()
-        val hash   = BCrypt.hashpw(req.senha, BCrypt.gensalt(12))
 
         UsuarioTable.insert {
-            it[id]        = novoId
-            it[nome]      = req.nome.trim()
-            it[email]     = req.email.trim().lowercase()
-            it[senhaHash] = hash
-            it[telefone]  = req.telefone?.filter { c -> c.isDigit() }?.takeIf { t -> t.isNotEmpty() }
-            it[this.perfilId] = perfilId
-            it[vendedor]  = req.vendedor
-            it[ativo]     = true
+            it[id]                     = novoId
+            it[nome]                   = req.nome.trim()
+            it[email]                  = req.email.trim().lowercase()
+            it[senhaHash]              = null
+            it[telefone]               = req.telefone.filter { c -> c.isDigit() }.takeIf { t -> t.isNotEmpty() }
+            it[this.perfilId]          = perfilId
+            it[vendedor]               = req.vendedor
+            it[ativo]                  = true
+            it[primeiroAcessoPendente] = true
         }
 
         UsuarioTable
@@ -159,17 +160,18 @@ class UsuarioRepositoryImpl : UsuarioRepository {
             .format(isoFormatter)
 
         return UsuarioListItem(
-            id              = row[UsuarioTable.id],
-            nome            = row[UsuarioTable.nome],
-            email           = row[UsuarioTable.email],
-            telefone        = row[UsuarioTable.telefone],
-            perfilId        = row[UsuarioTable.perfilId],
-            perfilCodigo    = row[PerfilTable.codigo],
-            perfilDescricao = row[PerfilTable.descricao],
-            vendedor        = row[UsuarioTable.vendedor],
-            ativo           = row[UsuarioTable.ativo],
-            ultimoAcesso    = ultimoAcesso,
-            createdAt       = createdAt,
+            id                      = row[UsuarioTable.id],
+            nome                    = row[UsuarioTable.nome],
+            email                   = row[UsuarioTable.email],
+            telefone                = row[UsuarioTable.telefone],
+            perfilId                = row[UsuarioTable.perfilId],
+            perfilCodigo            = row[PerfilTable.codigo],
+            perfilDescricao         = row[PerfilTable.descricao],
+            vendedor                = row[UsuarioTable.vendedor],
+            ativo                   = row[UsuarioTable.ativo],
+            primeiroAcessoPendente  = row[UsuarioTable.primeiroAcessoPendente],
+            ultimoAcesso            = ultimoAcesso,
+            createdAt               = createdAt,
         )
     }
 }

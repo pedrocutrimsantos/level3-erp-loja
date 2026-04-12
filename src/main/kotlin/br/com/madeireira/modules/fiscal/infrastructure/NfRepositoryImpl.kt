@@ -5,6 +5,7 @@ import br.com.madeireira.modules.fiscal.api.dto.*
 import br.com.madeireira.modules.fiscal.domain.model.NfEmitida
 import br.com.madeireira.modules.fiscal.domain.model.StatusNf
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneOffset
@@ -24,6 +25,7 @@ private object EmpresaT : Table("empresa") {
     val cidade       = varchar("cidade", 80)
     val uf           = char("uf", 2)
     val cep          = char("cep", 9)
+    val cfopPadrao   = varchar("cfop_padrao", 5)
     override val primaryKey = PrimaryKey(uuid("id"))
 }
 
@@ -123,6 +125,12 @@ class NfRepositoryImpl : NfRepository {
     }
 
     override suspend fun proximoNumero(serie: String): Int = dbQuery {
+        // Advisory lock por série dentro da transação.
+        // Garante que duas emissões simultâneas nunca obtenham o mesmo número,
+        // sem necessidade de tabela auxiliar. O lock é liberado automaticamente
+        // no commit ou rollback da transação (pg_advisory_xact_lock).
+        TransactionManager.current().exec("SELECT pg_advisory_xact_lock(hashtext('nf_numero_$serie'))")
+
         NfEmitidaTable
             .select { NfEmitidaTable.serie eq serie }
             .maxOfOrNull { it[NfEmitidaTable.numero] }
@@ -179,7 +187,8 @@ class NfRepositoryImpl : NfRepository {
             ?.let { toNf(it) } ?: return@dbQuery null
 
         // 1. Emitente
-        val emitRow = EmpresaT.selectAll().limit(1).firstOrNull()
+        val emitRow  = EmpresaT.selectAll().limit(1).firstOrNull()
+        val cfopEmit = emitRow?.get(EmpresaT.cfopPadrao)?.ifBlank { "5102" } ?: "5102"
         val emitente = if (emitRow != null) {
             DanfeEmitente(
                 cnpj         = emitRow[EmpresaT.cnpj],
@@ -237,7 +246,7 @@ class NfRepositoryImpl : NfRepository {
                         codigo        = row.getOrNull(ProdutoT.codigo) ?: "—",
                         descricao     = row.getOrNull(ProdutoT.descricao) ?: "—",
                         ncm           = row.getOrNull(ProdutoT.ncm) ?: "00000000",
-                        cfop          = "5102",
+                        cfop          = cfopEmit,
                         unidade       = row.getOrNull(UnidadeMedidaT.codigo) ?: "UN",
                         quantidade    = qtd.toPlainString(),
                         valorUnitario = row[ItemVendaT.precoUnitario].toPlainString(),

@@ -23,6 +23,7 @@ import {
   useAtualizarUsuario,
   useAtivarUsuario,
   useDesativarUsuario,
+  useReenviarPrimeiroAcesso,
 } from '../hooks/useUsuarios'
 import type { UsuarioResponse } from '@/shared/api/usuarios'
 
@@ -44,7 +45,7 @@ interface UsuarioFormValues {
   nome: string
   email: string
   telefone: string
-  senha: string
+  senha: string        // só usado na edição (opcional)
   perfilCodigo: string
   vendedor: boolean
 }
@@ -105,10 +106,9 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
         {
           nome: form.nome,
           email: form.email,
-          senha: form.senha,
+          telefone: form.telefone,
           perfilCodigo: form.perfilCodigo,
           vendedor: form.vendedor,
-          telefone: form.telefone || undefined,
         },
         { onSuccess: onClose },
       )
@@ -159,36 +159,42 @@ function UsuarioModal({ open, onClose, editando }: UsuarioModalProps) {
 
         <div>
           <label className="mb-1 block text-sm font-medium text-foreground">
-            Telefone / WhatsApp
+            Telefone / WhatsApp {!editando && <span className="text-destructive">*</span>}
           </label>
           <Input
+            required={!editando}
             type="tel"
             value={form.telefone}
             onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))}
             placeholder="(98) 99999-0000"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            Usado para envio do código de recuperação de senha
+            {editando
+              ? 'Usado para envio do código de recuperação de senha'
+              : 'Obrigatório — o código de primeiro acesso será enviado para este número'}
           </p>
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-foreground">
-            Senha {!editando && <span className="text-destructive">*</span>}
-          </label>
-          <Input
-            required={!editando}
-            type="password"
-            value={form.senha}
-            onChange={(e) => setForm((f) => ({ ...f, senha: e.target.value }))}
-            placeholder={
-              editando
-                ? 'Deixe em branco para manter a senha atual'
-                : 'Mínimo 8 caracteres'
-            }
-            minLength={form.senha.length > 0 ? 8 : undefined}
-          />
-        </div>
+        {editando && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-foreground">
+              Nova senha
+            </label>
+            <Input
+              type="password"
+              value={form.senha}
+              onChange={(e) => setForm((f) => ({ ...f, senha: e.target.value }))}
+              placeholder="Deixe em branco para manter a senha atual"
+              minLength={form.senha.length > 0 ? 8 : undefined}
+            />
+          </div>
+        )}
+
+        {!editando && (
+          <p className="rounded-lg bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            O usuário receberá um código de primeiro acesso via WhatsApp para definir a própria senha.
+          </p>
+        )}
 
         <div>
           <label className="mb-1 block text-sm font-medium text-foreground">
@@ -233,6 +239,7 @@ export default function UsuariosPage() {
   const { data: usuarios, isLoading, isError } = useUsuarios()
   const ativar = useAtivarUsuario()
   const desativar = useDesativarUsuario()
+  const reenviar = useReenviarPrimeiroAcesso()
   const userId = useAuthStore((s) => s.userId)
 
   const [modalAberto, setModalAberto] = useState(false)
@@ -315,7 +322,9 @@ export default function UsuariosPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {u.ativo ? (
+                      {u.primeiroAcessoPendente ? (
+                        <Badge variant="outline">Aguardando 1º acesso</Badge>
+                      ) : u.ativo ? (
                         <Badge variant="success">Ativo</Badge>
                       ) : (
                         <Badge variant="destructive">Inativo</Badge>
@@ -335,7 +344,17 @@ export default function UsuariosPage() {
                         >
                           Editar
                         </Button>
-                        {u.id !== userId && (
+                        {u.primeiroAcessoPendente && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => reenviar.mutate(u.email)}
+                            disabled={reenviar.isPending}
+                          >
+                            Reenviar código
+                          </Button>
+                        )}
+                        {u.id !== userId && !u.primeiroAcessoPendente && (
                           u.ativo ? (
                             <Button
                               variant="ghost"

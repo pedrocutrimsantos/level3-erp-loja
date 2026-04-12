@@ -44,6 +44,13 @@ export interface ResumoPagarResponse {
   totalVenceSemana: string
 }
 
+export interface ResumoReceberResponse {
+  totalAberto: string
+  totalVencido: string
+  totalVenceHoje: string
+  totalVenceSemana: string
+}
+
 export interface LancamentoFluxo {
   parcelaId: string
   tituloNumero: string
@@ -79,6 +86,9 @@ export const titulosApi = {
 
   resumoPagar: () =>
     api.get<ResumoPagarResponse>('/financeiro/resumo-pagar').then((r) => r.data),
+
+  resumoReceber: () =>
+    api.get<ResumoReceberResponse>('/financeiro/resumo-receber').then((r) => r.data),
 
   fluxoCaixa: (dias = 30) =>
     api.get<FluxoCaixaResponse>('/financeiro/fluxo-caixa', { params: { dias } }).then((r) => r.data),

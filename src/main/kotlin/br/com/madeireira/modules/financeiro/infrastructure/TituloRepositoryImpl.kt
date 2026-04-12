@@ -101,6 +101,38 @@ class TituloRepositoryImpl : TituloRepository {
         }
     }
 
+    override suspend fun sumParcelasAbertasReceber(ate: LocalDate): Map<String, java.math.BigDecimal> = dbQuery {
+        val limite        = ate.plusDays(365).toKotlinLocalDate()
+        val statusAbertos = listOf(StatusParcela.ABERTO, StatusParcela.VENCIDO)
+
+        val rows = (ParcelaFinanceiraTable innerJoin TituloFinanceiroTable)
+            .select {
+                (TituloFinanceiroTable.tipo eq TipoTitulo.RECEBER) and
+                (ParcelaFinanceiraTable.status inList statusAbertos) and
+                (ParcelaFinanceiraTable.dataVencimento lessEq limite)
+            }
+            .map { row ->
+                Pair(
+                    row[ParcelaFinanceiraTable.dataVencimento].toJavaLocalDate(),
+                    row[ParcelaFinanceiraTable.valor],
+                )
+            }
+
+        val seteDias = ate.plusDays(7)
+
+        val vencido   = rows.filter { it.first.isBefore(ate) }.sumOf { it.second }
+        val hojeTotal = rows.filter { it.first == ate }.sumOf { it.second }
+        val semana    = rows.filter { !it.first.isBefore(ate) && !it.first.isAfter(seteDias) }.sumOf { it.second }
+        val total     = rows.sumOf { it.second }
+
+        mapOf(
+            "total"   to total,
+            "vencido" to vencido,
+            "hoje"    to hojeTotal,
+            "semana"  to semana,
+        )
+    }
+
     override suspend fun sumParcelasAbertasPagar(ate: LocalDate): Map<String, java.math.BigDecimal> = dbQuery {
         // Calcula limite antes do bloco select para evitar conflito com SqlExpressionBuilder.plus
         val limite      = ate.plusDays(365).toKotlinLocalDate()

@@ -45,26 +45,34 @@ interface KpiCardProps {
   valor: string
   sub: string
   icon: React.ReactNode
+  /** Tailwind classes para a linha de acento no topo */
+  accent: string
+  /** Tailwind classes para o fundo do ícone */
   iconBg: string
+  /** Tailwind classes para a cor do ícone */
   iconColor: string
 }
 
-function KpiCard({ label, valor, sub, icon, iconBg, iconColor }: KpiCardProps) {
+function KpiCard({ label, valor, sub, icon, accent, iconBg, iconColor }: KpiCardProps) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {label}
-            </p>
-            <p className="mt-2 text-2xl font-bold text-foreground leading-none">{valor}</p>
-            <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>
-          </div>
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
-            <span className={iconColor}>{icon}</span>
-          </div>
+    <Card className="relative overflow-hidden hover:shadow-card-hover">
+      {/* Linha de acento no topo */}
+      <div className={`absolute inset-x-0 top-0 h-0.5 ${accent}`} />
+      <CardContent className="pt-5 px-5 pb-4">
+        {/* Ícone */}
+        <div className={`mb-4 inline-flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
+          <span className={iconColor}>{icon}</span>
         </div>
+        {/* Número principal */}
+        <p className="text-2xl font-bold text-foreground dark:text-[#e2e8f0] tabular-nums leading-none">
+          {valor}
+        </p>
+        {/* Label */}
+        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        {/* Sub-texto */}
+        <p className="mt-0.5 text-xs text-muted-foreground/80">{sub}</p>
       </CardContent>
     </Card>
   )
@@ -97,7 +105,7 @@ export default function DashboardPage() {
             {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 rounded-xl bg-muted" />)}
           </div>
           <div className="h-64 rounded-xl bg-muted" />
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
             <div className="h-52 rounded-xl bg-muted" />
             <div className="h-52 rounded-xl bg-muted" />
           </div>
@@ -136,49 +144,56 @@ export default function DashboardPage() {
         <KpiCard
           label="Faturamento Hoje"
           valor={formatarReais(data.faturamentoDia ?? '0')}
-          sub={`${data.quantidadeVendasDia ?? 0} ${(data.quantidadeVendasDia ?? 0) === 1 ? 'venda' : 'vendas'}`}
-          icon={<ShoppingCart className="h-5 w-5" />}
+          sub={`${data.quantidadeVendasDia ?? 0} ${(data.quantidadeVendasDia ?? 0) === 1 ? 'venda hoje' : 'vendas hoje'}`}
+          icon={<ShoppingCart className="h-4 w-4" />}
+          accent="bg-emerald-500"
           iconBg="bg-emerald-100 dark:bg-emerald-900/30"
           iconColor="text-emerald-600 dark:text-emerald-400"
         />
         <KpiCard
           label="Faturamento do Mês"
           valor={formatarReais(data.faturamentoMes ?? '0')}
-          sub={`${data.quantidadeVendasMes ?? 0} ${(data.quantidadeVendasMes ?? 0) === 1 ? 'venda' : 'vendas'}`}
-          icon={<TrendingUp className="h-5 w-5" />}
+          sub={`${data.quantidadeVendasMes ?? 0} ${(data.quantidadeVendasMes ?? 0) === 1 ? 'venda no mês' : 'vendas no mês'}`}
+          icon={<TrendingUp className="h-4 w-4" />}
+          accent="bg-blue-500"
           iconBg="bg-blue-100 dark:bg-blue-900/30"
           iconColor="text-blue-600 dark:text-blue-400"
         />
         <KpiCard
           label="A Receber"
           valor={formatarReais(data.titulosEmAberto?.valorTotal ?? '0')}
-          sub={`${data.titulosEmAberto?.quantidade ?? 0} ${(data.titulosEmAberto?.quantidade ?? 0) === 1 ? 'título' : 'títulos'}`}
-          icon={<CreditCard className="h-5 w-5" />}
-          iconBg="bg-orange-100 dark:bg-orange-900/30"
-          iconColor="text-orange-600 dark:text-orange-400"
+          sub={`${data.titulosEmAberto?.quantidade ?? 0} ${(data.titulosEmAberto?.quantidade ?? 0) === 1 ? 'título em aberto' : 'títulos em aberto'}`}
+          icon={<CreditCard className="h-4 w-4" />}
+          accent="bg-amber-500"
+          iconBg="bg-amber-100 dark:bg-amber-900/30"
+          iconColor="text-amber-600 dark:text-amber-400"
         />
         <KpiCard
           label="A Pagar"
           valor={formatarReais(data.contasAPagar?.valorTotal ?? '0')}
-          sub={`${data.contasAPagar?.quantidade ?? 0} ${(data.contasAPagar?.quantidade ?? 0) === 1 ? 'título' : 'títulos'} em aberto`}
-          icon={<Receipt className="h-5 w-5" />}
-          iconBg="bg-red-100 dark:bg-red-900/30"
-          iconColor="text-red-600 dark:text-red-400"
+          sub={`${data.contasAPagar?.quantidade ?? 0} ${(data.contasAPagar?.quantidade ?? 0) === 1 ? 'título em aberto' : 'títulos em aberto'}`}
+          icon={<Receipt className="h-4 w-4" />}
+          accent="bg-rose-500"
+          iconBg="bg-rose-100 dark:bg-rose-900/30"
+          iconColor="text-rose-600 dark:text-rose-400"
         />
       </div>
 
       {/* Gráfico de vendas — barras multicoloridas */}
       <Card>
         <CardContent className="p-5">
-          <p className="mb-4 text-sm font-semibold text-foreground">
-            Vendas — últimos 30 dias
-          </p>
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-foreground dark:text-[#e2e8f0]">Vendas — últimos 30 dias</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Faturamento diário no período</p>
+            </div>
+          </div>
           {chartData.length === 0 ? (
             <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
               Sem vendas no período
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartStyle.grid} />
                 <XAxis
@@ -224,14 +239,15 @@ export default function DashboardPage() {
       </Card>
 
       {/* Top Produtos + Estoque Crítico */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
 
         {/* Top 5 Produtos com barra de progresso colorida */}
         <Card>
           <CardContent className="p-5">
-            <p className="mb-4 text-sm font-semibold text-foreground">
-              Top 5 Produtos — últimos 30 dias
-            </p>
+            <div className="mb-5">
+              <p className="text-sm font-semibold text-foreground dark:text-[#e2e8f0]">Top 5 Produtos</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Maiores faturamentos — últimos 30 dias</p>
+            </div>
             {topProdutos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem vendas no período</p>
             ) : (
@@ -279,9 +295,10 @@ export default function DashboardPage() {
         {/* Estoque Crítico */}
         <Card>
           <CardContent className="p-5">
-            <p className="mb-4 text-sm font-semibold text-foreground">
-              Estoque Crítico — menores saldos
-            </p>
+            <div className="mb-5">
+              <p className="text-sm font-semibold text-foreground dark:text-[#e2e8f0]">Estoque Crítico</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Produtos com menores saldos</p>
+            </div>
             {(data.estoqueCritico ?? []).length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nenhum produto com saldo crítico

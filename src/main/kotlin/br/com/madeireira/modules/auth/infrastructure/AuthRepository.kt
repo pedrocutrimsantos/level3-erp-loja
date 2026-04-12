@@ -26,16 +26,17 @@ private object TenantTable : Table("public.tenant") {
 
 /** Tabela de usuários — resolvida via search_path do tenant ativo. */
 private object UsuarioTable : Table("usuario") {
-    val id                 = uuid("id")
-    val nome               = varchar("nome", 120)
-    val email              = varchar("email", 120)
-    val senhaHash          = varchar("senha_hash", 255)
-    val perfilId           = uuid("perfil_id")
-    val ativo              = bool("ativo")
-    val ultimoAcesso       = timestamp("ultimo_acesso").nullable()
-    val resetToken         = varchar("reset_token", 64).nullable()
-    val resetTokenExpira   = timestamp("reset_token_expira").nullable()
-    val telefone           = varchar("telefone", 20).nullable()
+    val id                     = uuid("id")
+    val nome                   = varchar("nome", 120)
+    val email                  = varchar("email", 120)
+    val senhaHash              = varchar("senha_hash", 255).nullable()
+    val perfilId               = uuid("perfil_id")
+    val ativo                  = bool("ativo")
+    val primeiroAcessoPendente = bool("primeiro_acesso_pendente")
+    val ultimoAcesso           = timestamp("ultimo_acesso").nullable()
+    val resetToken             = varchar("reset_token", 64).nullable()
+    val resetTokenExpira       = timestamp("reset_token_expira").nullable()
+    val telefone               = varchar("telefone", 20).nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -78,13 +79,14 @@ class AuthRepository {
                 .singleOrNull()
                 ?.let {
                     UsuarioAuth(
-                        id        = it[UsuarioTable.id].toString(),
-                        nome      = it[UsuarioTable.nome],
-                        email     = it[UsuarioTable.email],
-                        senhaHash = it[UsuarioTable.senhaHash],
-                        ativo     = it[UsuarioTable.ativo],
-                        perfil    = it[PerfilTable.codigo],
-                        telefone  = it[UsuarioTable.telefone],
+                        id                     = it[UsuarioTable.id].toString(),
+                        nome                   = it[UsuarioTable.nome],
+                        email                  = it[UsuarioTable.email],
+                        senhaHash              = it[UsuarioTable.senhaHash],
+                        ativo                  = it[UsuarioTable.ativo],
+                        perfil                 = it[PerfilTable.codigo],
+                        telefone               = it[UsuarioTable.telefone],
+                        primeiroAcessoPendente = it[UsuarioTable.primeiroAcessoPendente],
                     )
                 }
         }
@@ -125,13 +127,14 @@ class AuthRepository {
                 .singleOrNull()
                 ?.let {
                     UsuarioAuth(
-                        id        = it[UsuarioTable.id].toString(),
-                        nome      = it[UsuarioTable.nome],
-                        email     = it[UsuarioTable.email],
-                        senhaHash = it[UsuarioTable.senhaHash],
-                        ativo     = it[UsuarioTable.ativo],
-                        perfil    = it[PerfilTable.codigo],
-                        telefone  = it[UsuarioTable.telefone],
+                        id                     = it[UsuarioTable.id].toString(),
+                        nome                   = it[UsuarioTable.nome],
+                        email                  = it[UsuarioTable.email],
+                        senhaHash              = it[UsuarioTable.senhaHash],
+                        ativo                  = it[UsuarioTable.ativo],
+                        perfil                 = it[PerfilTable.codigo],
+                        telefone               = it[UsuarioTable.telefone],
+                        primeiroAcessoPendente = it[UsuarioTable.primeiroAcessoPendente],
                     )
                 }
         }

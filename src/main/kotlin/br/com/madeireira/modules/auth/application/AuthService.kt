@@ -29,8 +29,12 @@ class AuthService(
 
         require(usuario.ativo) { "Usuário desativado. Consulte o administrador." }
 
+        require(!usuario.primeiroAcessoPendente) {
+            "Você ainda não definiu sua senha. Use a opção 'Primeiro acesso' para concluir o cadastro."
+        }
+
         // 3. Verifica senha com bcrypt
-        val senhaOk = BCrypt.checkpw(req.senha, usuario.senhaHash)
+        val senhaOk = BCrypt.checkpw(req.senha, usuario.senhaHash ?: "")
         require(senhaOk) { "E-mail ou senha inválidos." }
 
         // 4. Atualiza ultimo_acesso (fire-and-forget, não bloqueia login)

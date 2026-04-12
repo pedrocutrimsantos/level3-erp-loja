@@ -51,6 +51,14 @@ data class ResumoPagarResponse(
 )
 
 @Serializable
+data class ResumoReceberResponse(
+    val totalAberto: String,
+    val totalVencido: String,
+    val totalVenceHoje: String,
+    val totalVenceSemana: String,
+)
+
+@Serializable
 data class LancamentoFluxoResponse(
     val parcelaId: String,
     val tituloNumero: String,

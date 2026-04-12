@@ -36,4 +36,20 @@ export const authApi = {
 
   alterarSenha: (senhaAtual: string, novaSenha: string) =>
     api.post<{ ok: boolean }>('/auth/alterar-senha', { senhaAtual, novaSenha }).then((r) => r.data),
+
+  // ── Primeiro acesso ─────────────────────────────────────────────────────────
+
+  primeiroAcessoSolicitar: (email: string, canal = 'WHATSAPP') =>
+    api.post<{ mensagem: string }>('/auth/primeiro-acesso/solicitar', { email, canal }).then((r) => r.data),
+
+  primeiroAcessoValidarToken: (email: string, token: string) =>
+    api.post<{ valido: boolean }>('/auth/primeiro-acesso/validar-token', { email, token }).then((r) => r.data),
+
+  primeiroAcessoDefinirSenha: (email: string, token: string, novaSenha: string, confirmacaoSenha: string) =>
+    api.post<{ ok: boolean; mensagem: string }>('/auth/primeiro-acesso/definir-senha', {
+      email, token, novaSenha, confirmacaoSenha,
+    }).then((r) => r.data),
+
+  primeiroAcessoReenviar: (email: string, canal = 'WHATSAPP') =>
+    api.post<{ mensagem: string }>('/auth/primeiro-acesso/reenviar', { email, canal }).then((r) => r.data),
 }

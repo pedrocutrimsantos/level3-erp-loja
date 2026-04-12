@@ -15,7 +15,22 @@
       "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")",
       "Bash(java -version)",
       "Bash(npx tsc:*)",
-      "WebFetch(domain:codedthemes.gitbook.io)"
+      "WebFetch(domain:codedthemes.gitbook.io)",
+      "Bash(xargs ls:*)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Java/corretto-24.0.2\" ./gradlew compileKotlin)",
+      "Read(//c/Users/pedro/AppData/Local/Programs//**)",
+      "Bash(grep -l \"usuario\" src/main/resources/db/migration/*.sql)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(export JAVA_HOME)",
+      "Bash(cmd.exe /c \"where java 2>nul\")",
+      "Bash(grep -r \"titulo_financeiro\\\\|parcela_financeira\\\\|turno_caixa\" /c/Users/pedro/Repository/level3-loja-madeira/src/main/resources/db/migration/*.sql)",
+      "Bash(where java:*)",
+      "Read(//usr/lib/**)",
+      "Bash(npx vite:*)",
+      "Bash(sed -i 's|// Re-consulta o status na SEFAZ via Focus NF-e para NF-e que ficaram|// Re-consulta o status na SEFAZ para NF-e que ficaram|' /c/Users/pedro/Repository/level3-loja-madeira/src/main/kotlin/br/com/madeireira/modules/fiscal/api/NfeRoutes.kt)",
+      "Bash(sed -i 's|║  FOCUS_NFE_AMBIENTE=producao detectado.                       ║|║  NFE_AMBIENTE=producao detectado.                             ║|' /c/Users/pedro/Repository/level3-loja-madeira/src/main/kotlin/br/com/madeireira/modules/fiscal/application/AmbienteGuard.kt)",
+      "Bash(sed -i 's|. Substituir por FocusNFeAdapter \\(ou outro provider\\) em produção.| Substituir por SefazDirectAdapter em produção.|' /c/Users/pedro/Repository/level3-loja-madeira/src/main/kotlin/br/com/madeireira/modules/fiscal/application/NfEmissaoStub.kt)",
+      "Bash(sed -i 's|O adapter de produção \\(Focus NF-e\\) suporta consulta avulsa via GET /nfe/{ref}.|SefazDirectAdapter suporta consulta por chave via NFeConsultaProtocolo4.|' /c/Users/pedro/Repository/level3-loja-madeira/src/main/kotlin/br/com/madeireira/modules/fiscal/application/NfeService.kt)"
     ]
   }
 }

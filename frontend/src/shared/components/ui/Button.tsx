@@ -13,37 +13,43 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'bg-primary text-primary-foreground shadow-sm ' +
-    'hover:bg-primary-800 hover:shadow-md active:shadow-sm ' +
-    'focus-visible:ring-primary',
+    'bg-primary text-primary-foreground ' +
+    'shadow-sm hover:bg-primary-800 hover:shadow-md ' +
+    'active:scale-[0.98] active:shadow-sm ' +
+    'focus-visible:ring-primary/50',
 
   secondary:
-    'bg-secondary text-secondary-foreground shadow-sm ' +
-    'hover:bg-secondary-600 hover:shadow-md active:shadow-sm ' +
-    'focus-visible:ring-secondary',
+    'bg-secondary text-secondary-foreground ' +
+    'shadow-sm hover:bg-secondary-600 hover:shadow-md ' +
+    'active:scale-[0.98] active:shadow-sm ' +
+    'focus-visible:ring-secondary/50',
 
   destructive:
-    'bg-destructive text-destructive-foreground shadow-sm ' +
-    'hover:bg-destructive/90 hover:shadow-md active:shadow-sm ' +
-    'focus-visible:ring-destructive',
+    'bg-destructive text-destructive-foreground ' +
+    'shadow-sm hover:opacity-90 hover:shadow-md ' +
+    'active:scale-[0.98] active:shadow-sm ' +
+    'focus-visible:ring-destructive/50',
 
   outline:
-    'border border-border bg-card text-foreground shadow-sm ' +
-    'hover:bg-muted hover:shadow-md active:shadow-sm ' +
-    'dark:bg-transparent dark:border-[#243040] dark:text-[#e2e8f0] dark:hover:bg-[#243040] ' +
-    'focus-visible:ring-ring',
+    'border border-border bg-card text-foreground ' +
+    'shadow-sm hover:bg-muted/60 hover:border-border/80 ' +
+    'active:scale-[0.98] active:bg-muted ' +
+    'dark:bg-transparent dark:border-[#243040] dark:text-[#e2e8f0] ' +
+    'dark:hover:bg-[#1c2636] dark:hover:border-[#2d3f54] ' +
+    'focus-visible:ring-ring/50',
 
   ghost:
-    'bg-transparent text-foreground ' +
-    'hover:bg-muted active:bg-muted/80 ' +
-    'dark:text-[#94a3b8] dark:hover:bg-[#243040] dark:hover:text-[#e2e8f0] ' +
-    'focus-visible:ring-ring',
+    'bg-transparent text-foreground/70 ' +
+    'hover:bg-muted/70 hover:text-foreground ' +
+    'active:scale-[0.98] active:bg-muted ' +
+    'dark:text-[#94a3b8] dark:hover:bg-[#1c2636] dark:hover:text-[#e2e8f0] ' +
+    'focus-visible:ring-ring/50',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5',
-  md: 'h-9 px-4 text-sm gap-2',
-  lg: 'h-10 px-5 text-sm gap-2',
+  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
+  md: 'h-9 px-4 text-sm gap-2 rounded-lg',
+  lg: 'h-10 px-5 text-sm gap-2 rounded-lg',
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -52,8 +58,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'inline-flex items-center justify-center font-medium transition-all duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
         'disabled:pointer-events-none disabled:opacity-50',
         variantClasses[variant],
         sizeClasses[size],

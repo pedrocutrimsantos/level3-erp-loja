@@ -19,4 +19,5 @@ interface TituloRepository {
     suspend fun cancelarParcelas(tituloId: UUID)
     suspend fun findParcelasAbertasNoPeriodo(dataInicio: LocalDate, dataFim: LocalDate): List<ParcelaComTitulo>
     suspend fun sumParcelasAbertasPagar(ate: LocalDate): Map<String, java.math.BigDecimal>
+    suspend fun sumParcelasAbertasReceber(ate: LocalDate): Map<String, java.math.BigDecimal>
 }

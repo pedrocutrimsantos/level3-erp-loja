@@ -12,6 +12,7 @@ data class UsuarioListItem(
     val perfilDescricao: String,
     val vendedor: Boolean,
     val ativo: Boolean,
+    val primeiroAcessoPendente: Boolean,
     val ultimoAcesso: String?,
     val createdAt: String,
 )
@@ -19,10 +20,9 @@ data class UsuarioListItem(
 data class CriarUsuarioRequest(
     val nome: String,
     val email: String,
-    val senha: String,
+    val telefone: String,               // obrigatório — token de 1º acesso enviado via WhatsApp
     val perfilCodigo: String,
     val vendedor: Boolean = false,
-    val telefone: String? = null,
 )
 
 data class AtualizarUsuarioRequest(

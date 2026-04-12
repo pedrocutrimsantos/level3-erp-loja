@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ArrowLeftRight } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
+import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
 import { Card, CardContent } from '@/shared/components/ui/Card'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import {
@@ -89,40 +90,44 @@ export default function MovimentacoesPage() {
       />
 
       {/* Filtros */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        <select
-          value={produtoFiltro}
-          onChange={(e) => setProdutoFiltro(e.target.value)}
-          className="rounded-md border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 min-w-[220px]"
-        >
-          <option value="">Todos os produtos</option>
-          {(produtos ?? []).map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.codigo} — {p.descricao}
-            </option>
-          ))}
-        </select>
+      <FilterBar className="mb-4">
+        <FilterField label="Produto" className="min-w-[220px] flex-1">
+          <select
+            value={produtoFiltro}
+            onChange={(e) => setProdutoFiltro(e.target.value)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-[#0d1117] dark:border-[#243040]"
+          >
+            <option value="">Todos os produtos</option>
+            {(produtos ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.codigo} — {p.descricao}
+              </option>
+            ))}
+          </select>
+        </FilterField>
 
-        <select
-          value={tipoFiltro}
-          onChange={(e) => setTipoFiltro(e.target.value)}
-          className="rounded-md border border-border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          <option value="">Todos os tipos</option>
-          {TODOS_OS_TIPOS.map((t) => (
-            <option key={t} value={t}>{TIPO_LABEL[t] ?? t}</option>
-          ))}
-        </select>
+        <FilterField label="Tipo">
+          <select
+            value={tipoFiltro}
+            onChange={(e) => setTipoFiltro(e.target.value)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-[#0d1117] dark:border-[#243040]"
+          >
+            <option value="">Todos os tipos</option>
+            {TODOS_OS_TIPOS.map((t) => (
+              <option key={t} value={t}>{TIPO_LABEL[t] ?? t}</option>
+            ))}
+          </select>
+        </FilterField>
 
         {(produtoFiltro || tipoFiltro) && (
           <button
             onClick={() => { setProdutoFiltro(''); setTipoFiltro('') }}
-            className="rounded-md border border-border bg-white px-3 py-1.5 text-xs text-gray-600 hover:bg-muted/50 transition-colors"
+            className="self-end h-8 rounded-md border border-border bg-card dark:bg-[#161d27] px-3 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
           >
             Limpar filtros
           </button>
         )}
-      </div>
+      </FilterBar>
 
       <Card>
         <CardContent className="p-0">

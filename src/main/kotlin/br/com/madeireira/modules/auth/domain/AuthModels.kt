@@ -34,11 +34,12 @@ data class TenantRecord(
 )
 
 data class UsuarioAuth(
-    val id:        String,
-    val nome:      String,
-    val email:     String,
-    val senhaHash: String,
-    val ativo:     Boolean,
-    val perfil:    String,
-    val telefone:  String? = null,
+    val id:                     String,
+    val nome:                   String,
+    val email:                  String,
+    val senhaHash:              String?,
+    val ativo:                  Boolean,
+    val perfil:                 String,
+    val telefone:               String? = null,
+    val primeiroAcessoPendente: Boolean = false,
 )

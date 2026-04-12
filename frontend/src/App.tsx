@@ -4,9 +4,10 @@ import { AppLayout } from '@/shared/components/layout/AppLayout'
 import { useAuthStore } from '@/shared/store/authStore'
 import { useAdminStore } from '@/modules/admin/store/adminStore'
 
-const LoginPage          = React.lazy(() => import('@/modules/auth/pages/LoginPage'))
-const EsqueciSenhaPage   = React.lazy(() => import('@/modules/auth/pages/EsqueciSenhaPage'))
-const RedefinirSenhaPage = React.lazy(() => import('@/modules/auth/pages/RedefinirSenhaPage'))
+const LoginPage            = React.lazy(() => import('@/modules/auth/pages/LoginPage'))
+const EsqueciSenhaPage     = React.lazy(() => import('@/modules/auth/pages/EsqueciSenhaPage'))
+const RedefinirSenhaPage   = React.lazy(() => import('@/modules/auth/pages/RedefinirSenhaPage'))
+const PrimeiroAcessoPage   = React.lazy(() => import('@/modules/auth/pages/PrimeiroAcessoPage'))
 const AdminLoginPage     = React.lazy(() => import('@/modules/admin/pages/AdminLoginPage'))
 const TenantsPage        = React.lazy(() => import('@/modules/admin/pages/TenantsPage'))
 
@@ -26,6 +27,7 @@ const OrcamentosPage      = React.lazy(() => import('@/modules/venda/pages/Orcam
 const DevolucoesPage      = React.lazy(() => import('@/modules/venda/pages/DevolucoesPage'))
 const TitulosPage         = React.lazy(() => import('@/modules/financeiro/pages/TitulosPage'))
 const ContasPagarPage     = React.lazy(() => import('@/modules/financeiro/pages/ContasPagarPage'))
+const ContasReceberPage   = React.lazy(() => import('@/modules/financeiro/pages/ContasReceberPage'))
 const CaixaPage           = React.lazy(() => import('@/modules/financeiro/pages/CaixaPage'))
 const FluxoCaixaPage      = React.lazy(() => import('@/modules/financeiro/pages/FluxoCaixaPage'))
 const DashboardPage       = React.lazy(() => import('@/modules/relatorio/pages/DashboardPage'))
@@ -37,6 +39,10 @@ const EntregasPage        = React.lazy(() => import('@/modules/entrega/pages/Ent
 const PrecosPage          = React.lazy(() => import('@/modules/produto/pages/PrecosPage'))
 const UsuariosPage        = React.lazy(() => import('@/modules/usuario/pages/UsuariosPage'))
 const EmpresaPage         = React.lazy(() => import('@/modules/empresa/pages/EmpresaPage'))
+const CobrancaPage        = React.lazy(() => import('@/modules/financeiro/pages/CobrancaPage'))
+const PromocaoPage        = React.lazy(() => import('@/modules/promocao/pages/PromocaoPage'))
+const DrePage             = React.lazy(() => import('@/modules/relatorio/pages/DrePage'))
+const MargemPeriodoPage   = React.lazy(() => import('@/modules/relatorio/pages/MargemPeriodoPage'))
 
 function PageFallback() {
   return (
@@ -64,9 +70,10 @@ export default function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           {/* Rotas públicas */}
-          <Route path="/login"           element={<LoginPage />} />
-          <Route path="/esqueci-senha"   element={<EsqueciSenhaPage />} />
-          <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
+          <Route path="/login"            element={<LoginPage />} />
+          <Route path="/esqueci-senha"    element={<EsqueciSenhaPage />} />
+          <Route path="/redefinir-senha"  element={<RedefinirSenhaPage />} />
+          <Route path="/primeiro-acesso"  element={<PrimeiroAcessoPage />} />
 
           {/* Painel super-admin — autenticação independente */}
           <Route path="/admin" element={<AdminLoginPage />} />
@@ -95,6 +102,8 @@ export default function App() {
                       <Route path="/" element={<Navigate to="/relatorios/dashboard" replace />} />
                       <Route path="/relatorios/dashboard"   element={<DashboardPage />} />
                       <Route path="/relatorios/exportar"    element={<RelatoriosExportPage />} />
+                      <Route path="/relatorios/dre"            element={<DrePage />} />
+                      <Route path="/relatorios/margem-periodo" element={<MargemPeriodoPage />} />
                       <Route path="/produtos"               element={<ProdutoListPage />} />
                       <Route path="/produtos/precos"        element={<PrecosPage />} />
                       <Route path="/produtos/novo"          element={<ProdutoFormPage />} />
@@ -115,8 +124,11 @@ export default function App() {
                       <Route path="/entregas"               element={<EntregasPage />} />
                       <Route path="/financeiro/caixa"         element={<CaixaPage />} />
                       <Route path="/financeiro/titulos"       element={<TitulosPage />} />
-                      <Route path="/financeiro/contas-pagar"  element={<ContasPagarPage />} />
+                      <Route path="/financeiro/contas-pagar"   element={<ContasPagarPage />} />
+                      <Route path="/financeiro/contas-receber" element={<ContasReceberPage />} />
                       <Route path="/financeiro/fluxo-caixa"   element={<FluxoCaixaPage />} />
+                      <Route path="/financeiro/cobranca"      element={<CobrancaPage />} />
+                      <Route path="/vendas/promocoes"         element={<PromocaoPage />} />
                       <Route path="/configuracoes/empresa"  element={<EmpresaPage />} />
                       <Route path="/configuracoes/usuarios" element={<UsuariosPage />} />
                     </Routes>

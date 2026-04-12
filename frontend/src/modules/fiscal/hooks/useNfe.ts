@@ -50,6 +50,16 @@ export function usePreviewXml() {
   })
 }
 
+export function useReprocessarNfe() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => nfeApi.reprocessar(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['nfe'] })
+    },
+  })
+}
+
 export function useImportarXml() {
   const qc = useQueryClient()
   return useMutation({

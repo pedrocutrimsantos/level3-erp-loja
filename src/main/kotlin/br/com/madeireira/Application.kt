@@ -7,8 +7,11 @@ import br.com.madeireira.infrastructure.sms.RedbotWhatsAppService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import br.com.madeireira.modules.auth.api.authRoutes
+import br.com.madeireira.modules.auth.api.primeiroAcessoRoutes
 import br.com.madeireira.modules.auth.application.AuthService
+import br.com.madeireira.modules.auth.application.PrimeiroAcessoService
 import br.com.madeireira.modules.auth.infrastructure.AuthRepository
+import br.com.madeireira.modules.auth.infrastructure.PrimeiroAcessoRepository
 import br.com.madeireira.modules.cliente.api.clienteRoutes
 import br.com.madeireira.modules.cliente.application.ClienteService
 import br.com.madeireira.modules.cliente.infrastructure.ClienteRepositoryImpl
@@ -33,11 +36,11 @@ import br.com.madeireira.modules.financeiro.infrastructure.TurnoRepositoryImpl
 import br.com.madeireira.modules.empresa.api.empresaRoutes
 import br.com.madeireira.modules.empresa.infrastructure.EmpresaRepositoryImpl
 import br.com.madeireira.modules.fiscal.api.nfeRoutes
+import br.com.madeireira.modules.fiscal.application.AmbienteGuard
 import br.com.madeireira.modules.fiscal.application.NfeService
-import br.com.madeireira.modules.fiscal.application.NfEmissaoStub
-import br.com.madeireira.modules.fiscal.infrastructure.FocusNFeAdapter
-import br.com.madeireira.modules.fiscal.infrastructure.FocusNFeConfig
+import br.com.madeireira.modules.fiscal.application.XmlNfeArquivadorLocal
 import br.com.madeireira.modules.fiscal.infrastructure.NfRepositoryImpl
+import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazCertificadoLoader
 import br.com.madeireira.modules.fornecedor.api.fornecedorRoutes
 import br.com.madeireira.modules.fornecedor.application.FornecedorService
 import br.com.madeireira.modules.fornecedor.infrastructure.FornecedorRepositoryImpl
@@ -45,6 +48,13 @@ import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import br.com.madeireira.modules.produto.api.produtoRoutes
 import br.com.madeireira.modules.produto.application.ProdutoService
 import br.com.madeireira.modules.produto.infrastructure.ProdutoRepositoryImpl
+import br.com.madeireira.modules.cobranca.api.cobrancaRoutes
+import br.com.madeireira.modules.promocao.api.promocaoRoutes
+import br.com.madeireira.modules.promocao.application.PromocaoService
+import br.com.madeireira.modules.promocao.infrastructure.PromocaoRepositoryImpl
+import br.com.madeireira.modules.cobranca.application.CobrancaScheduler
+import br.com.madeireira.modules.cobranca.application.CobrancaService
+import br.com.madeireira.modules.cobranca.infrastructure.CobrancaRepositoryImpl
 import br.com.madeireira.modules.relatorio.api.relatorioRoutes
 import br.com.madeireira.modules.relatorio.application.RelatorioService
 import br.com.madeireira.modules.tenant.api.tenantRoutes
@@ -85,6 +95,10 @@ fun main() {
 }
 
 fun Application.module() {
+    // ── Validações de startup (falham rápido antes de aceitar requisições) ────
+    AmbienteGuard.validar()
+    SefazCertificadoLoader.carregar() // null = emissão direta desabilitada (OK)
+
     // Database init
     DatabaseConfig.init()
 
@@ -175,10 +189,13 @@ fun Application.module() {
     val entregaService       = EntregaService(entregaRepository, vendaRepository, produtoRepository)
 
     val nfRepository         = NfRepositoryImpl()
-    val nfEmissor            = FocusNFeConfig.fromEnv()?.let { FocusNFeAdapter(it) } ?: NfEmissaoStub()
-    val nfeService           = NfeService(nfRepository, vendaRepository, produtoRepository, vendaService, compraService, nfEmissor, clienteRepository)
-
+    val xmlArquivador        = XmlNfeArquivadorLocal()
     val empresaRepository    = EmpresaRepositoryImpl()
+
+    // Valida certificado A1 no startup (SefazCertificadoLoader loga e falha se inválido)
+    SefazCertificadoLoader.carregar()
+
+    val nfeService           = NfeService(nfRepository, vendaRepository, produtoRepository, vendaService, compraService, clienteRepo = clienteRepository, xmlArquivador = xmlArquivador, empresaRepo = empresaRepository)
 
     val usuarioRepository    = UsuarioRepositoryImpl()
     val usuarioService       = UsuarioService(usuarioRepository)
@@ -186,7 +203,15 @@ fun Application.module() {
     val smsHttpClient        = HttpClient(CIO)
     val redbotSms            = RedbotWhatsAppService.fromEnv(smsHttpClient)
     val authService          = AuthService(AuthRepository(), redbotSms)
+    val primeiroAcessoService = PrimeiroAcessoService(PrimeiroAcessoRepository(), AuthRepository(), redbotSms)
     val tenantProvisioner    = TenantProvisioner()
+
+    val cobrancaRepository   = CobrancaRepositoryImpl()
+    val cobrancaService      = CobrancaService(cobrancaRepository, redbotSms)
+    CobrancaScheduler(cobrancaService).iniciar()
+
+    val promocaoRepository   = PromocaoRepositoryImpl()
+    val promocaoService      = PromocaoService(promocaoRepository)
 
     // ── Rotas ────────────────────────────────────────────────────────────────
 
@@ -194,6 +219,7 @@ fun Application.module() {
 
         // Rotas públicas (sem JWT)
         authRoutes(authService)
+        primeiroAcessoRoutes(primeiroAcessoService)
         tenantRoutes(tenantProvisioner)
 
         // Rotas protegidas — JWT obrigatório
@@ -227,6 +253,8 @@ fun Application.module() {
             relatorioRoutes(RelatorioService())
             usuarioRoutes(usuarioService)
             empresaRoutes(empresaRepository)
+            cobrancaRoutes(cobrancaService)
+            promocaoRoutes(promocaoService)
         }
     }
 }
