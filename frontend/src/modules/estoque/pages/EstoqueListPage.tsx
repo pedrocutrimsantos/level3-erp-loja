@@ -25,14 +25,18 @@ import { Perms } from '@/shared/utils/permissions'
 interface ProdutoLinhaProps {
   produto: ProdutoResponse
   onAjuste: (produtoId: string) => void
+  apenasComSaldo: boolean
 }
 
-function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
+function ProdutoLinha({ produto, onAjuste, apenasComSaldo }: ProdutoLinhaProps) {
   const navigate = useNavigate()
   const { data: saldo, isLoading } = useSaldoEstoque(produto.id)
   const podeAjustar = useTemPermissao(Perms.EST_AJUSTE)
 
   const saldoM3 = saldo ? parseFloat(saldo.saldoM3) : null
+
+  // Quando o filtro está ativo, oculta linhas sem saldo (aguarda o carregamento antes de esconder)
+  if (!isLoading && apenasComSaldo && (saldoM3 == null || saldoM3 <= 0)) return null
   const saldoMetros =
     saldo?.saldoMetrosLineares != null ? parseFloat(saldo.saldoMetrosLineares) : null
   const dataAtualizacao = saldo?.dataUltimaAtualizacao ?? null
@@ -198,6 +202,7 @@ export default function EstoqueListPage() {
                     key={produto.id}
                     produto={produto}
                     onAjuste={(id) => setProdutoAjusteId(id)}
+                    apenasComSaldo={apenasComSaldo}
                   />
                 ))}
               </TableBody>
