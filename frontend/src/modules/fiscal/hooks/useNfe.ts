@@ -67,6 +67,7 @@ export function useImportarXml() {
       chaveAcesso: string | null
       emitenteCnpj: string
       emitenteNome: string
+      fornecedorId?: string | null
       itens: NfeXmlItemConfirmar[]
     }) => nfeApi.importarXml(payload),
     onSuccess: () => {

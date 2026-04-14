@@ -22,7 +22,7 @@ function formatarData(iso: string | null | undefined): string {
 interface CampoEditavelProps {
   label: string
   value: string | null | undefined
-  onSave: (val: string) => Promise<void>
+  onSave: (val: string) => Promise<unknown>
   placeholder?: string
   tipo?: 'text' | 'tel'
 }

@@ -103,7 +103,7 @@ function MobileDrawer({
   const drawerGroups = filtrarNavGroups(perfil)
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !BOTTOM_NAV_PATHS.has(item.to as string)),
+      items: group.items.filter((item) => !(BOTTOM_NAV_PATHS as Set<string>).has(item.to)),
     }))
     .filter((group) => group.items.length > 0)
 

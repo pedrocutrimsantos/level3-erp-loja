@@ -101,13 +101,13 @@ function DevolucaoModal({ onClose }: DevolucaoModalProps) {
       .filter(({ quantidade }) => parseFloat(quantidade) > 0)
 
     if (!itensSelecionados.length) {
-      toast.addToast('Informe ao menos um item com quantidade maior que zero.', 'error')
+      toast.erro('Informe ao menos um item com quantidade maior que zero.')
       return
     }
 
     const invalido = itensSelecionados.find(({ quantidade, max }) => parseFloat(quantidade) > max)
     if (invalido) {
-      toast.addToast('Quantidade informada supera a quantidade original da venda.', 'error')
+      toast.erro('Quantidade informada supera a quantidade original da venda.')
       return
     }
 
@@ -119,10 +119,10 @@ function DevolucaoModal({ onClose }: DevolucaoModalProps) {
           motivo: motivo.trim() || undefined,
         },
       })
-      toast.addToast('Devolução registrada com sucesso!', 'success')
+      toast.sucesso('Devolução registrada com sucesso!')
       onClose()
     } catch (e) {
-      toast.addToast(erroMsg(e, 'Erro ao registrar devolução'), 'error')
+      toast.erro(erroMsg(e, 'Erro ao registrar devolução'))
     }
   }
 
