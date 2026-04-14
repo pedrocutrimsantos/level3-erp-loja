@@ -11,6 +11,8 @@ import {
 } from '@/shared/components/ui/Table'
 import { useTitulos, useBaixaTitulo, useCancelarTitulo, useResumoReceber } from '../hooks/useTitulos'
 import type { TituloResponse } from '@/shared/api/titulos'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -273,6 +275,7 @@ export default function ContasReceberPage() {
   })
 
   const titulosFiltrados = useMemo(() => titulos ?? [], [titulos])
+  const { paginatedItems: titulosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(titulosFiltrados)
 
   return (
     <div>
@@ -354,6 +357,7 @@ export default function ContasReceberPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -368,7 +372,7 @@ export default function ContasReceberPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {titulosFiltrados.map((t) => {
+                {titulosPaginados.map((t) => {
                   const vencido = isVencido(t)
                   const origemLabel = t.formaPagamento
                     ? (ORIGEM_LABEL[t.formaPagamento] ?? null)
@@ -442,6 +446,10 @@ export default function ContasReceberPage() {
                 })}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

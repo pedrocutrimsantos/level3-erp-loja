@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { FileCheck, FileUp, Printer, RefreshCw, Send, XCircle } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
@@ -272,6 +274,8 @@ function FornecedorSelect({
 export default function NfePage() {
   const { data: nfs,      isLoading: loadingNfs  } = useNfeLista()
   const { data: pendentes, isLoading: loadingPend } = useNfePendentes()
+  const { paginatedItems: pendentesPaginados, page: pagePend, setPage: setPagePend, perPage: perPagePend, setPerPage: setPerPagePend, totalPages: totalPagesPend, totalItems: totalItemsPend } = usePagination(pendentes ?? [])
+  const { paginatedItems: nfsPaginadas, page: pageNfs, setPage: setPageNfs, perPage: perPageNfs, setPerPage: setPerPageNfs, totalPages: totalPagesNfs, totalItems: totalItemsNfs } = usePagination(nfs ?? [])
   const emitir       = useEmitirNfe()
   const cancelar     = useCancelarNfe()
   const reprocessar  = useReprocessarNfe()
@@ -388,6 +392,7 @@ export default function NfePage() {
               description="Todas as vendas confirmadas já possuem NF-e emitida."
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -400,7 +405,7 @@ export default function NfePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendentes.map((v) => (
+                {pendentesPaginados.map((v) => (
                   <TableRow key={v.vendaId}>
                     <TableCell className="font-mono text-sm font-medium">{v.vendaNumero}</TableCell>
                     <TableCell className="text-sm">
@@ -431,6 +436,10 @@ export default function NfePage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={pagePend} totalPages={totalPagesPend} totalItems={totalItemsPend} perPage={perPagePend} onPageChange={setPagePend} onPerPageChange={setPerPagePend} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -450,6 +459,7 @@ export default function NfePage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -463,7 +473,7 @@ export default function NfePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {nfs.map((nf) => (
+                {nfsPaginadas.map((nf) => (
                   <TableRow key={nf.id}>
                     <TableCell className="font-mono text-sm font-medium">
                       {nf.numero.toString().padStart(9, '0')}/{nf.serie}
@@ -540,6 +550,10 @@ export default function NfePage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={pageNfs} totalPages={totalPagesNfs} totalItems={totalItemsNfs} perPage={perPageNfs} onPageChange={setPageNfs} onPerPageChange={setPerPageNfs} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

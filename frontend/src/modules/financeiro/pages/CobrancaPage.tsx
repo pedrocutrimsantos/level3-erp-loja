@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { MessageSquare, Send, Clock, AlertTriangle, CheckCircle, XCircle, Phone } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { Badge } from '@/shared/components/ui/Badge'
@@ -84,6 +86,8 @@ export default function CobrancaPage() {
 
   const { data: pendentes = [], isLoading: loadPend } = useCobrancaPendentes()
   const { data: historico = [], isLoading: loadHist } = useCobrancaHistorico(200)
+  const { paginatedItems: pendentesPaginados, page: pagePend, setPage: setPagePend, perPage: perPagePend, setPerPage: setPerPagePend, totalPages: totalPagesPend, totalItems: totalItemsPend } = usePagination(pendentes)
+  const { paginatedItems: historicoPaginado, page: pageHist, setPage: setPageHist, perPage: perPageHist, setPerPage: setPerPageHist, totalPages: totalPagesHist, totalItems: totalItemsHist } = usePagination(historico)
 
   const dispararLote  = useDispararLote()
   const dispararUnica = useDispararUnica()
@@ -160,6 +164,7 @@ export default function CobrancaPage() {
                   description="Não há parcelas nos dias da régua para hoje."
                 />
               ) : (
+                <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -173,7 +178,7 @@ export default function CobrancaPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendentes.map((p) => (
+                    {pendentesPaginados.map((p) => (
                       <TableRow key={p.parcelaId}>
                         <TableCell className="font-mono text-xs">{p.tituloNumero}</TableCell>
                         <TableCell>{p.clienteNome ?? '—'}</TableCell>
@@ -206,6 +211,10 @@ export default function CobrancaPage() {
                     ))}
                   </TableBody>
                 </Table>
+                <div className="border-t border-border px-4 dark:border-[#243040]">
+                  <Pagination page={pagePend} totalPages={totalPagesPend} totalItems={totalItemsPend} perPage={perPagePend} onPageChange={setPagePend} onPerPageChange={setPerPagePend} />
+                </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -224,6 +233,7 @@ export default function CobrancaPage() {
                 description="O histórico aparecerá aqui após o primeiro disparo."
               />
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -236,7 +246,7 @@ export default function CobrancaPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {historico.map((h) => (
+                  {historicoPaginado.map((h) => (
                     <TableRow key={h.id}>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {fmtDataHora(h.enviadoEm)}
@@ -262,6 +272,10 @@ export default function CobrancaPage() {
                   ))}
                 </TableBody>
               </Table>
+              <div className="border-t border-border px-4 dark:border-[#243040]">
+                <Pagination page={pageHist} totalPages={totalPagesHist} totalItems={totalItemsHist} perPage={perPageHist} onPageChange={setPageHist} onPerPageChange={setPerPageHist} />
+              </div>
+              </>
             )}
           </CardContent>
         </Card>

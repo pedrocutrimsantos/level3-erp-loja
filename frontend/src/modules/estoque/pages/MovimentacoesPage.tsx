@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { ArrowLeftRight } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
@@ -82,6 +84,8 @@ export default function MovimentacoesPage() {
 
   const { data: movs, isLoading, isError } = useMovimentacoesGeral(params)
 
+  const { paginatedItems: movsPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(movs ?? [])
+
   return (
     <div>
       <PageHeader
@@ -156,6 +160,7 @@ export default function MovimentacoesPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -169,7 +174,7 @@ export default function MovimentacoesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {movs.map((mov) => (
+                {movsPaginados.map((mov) => (
                   <TableRow key={mov.id}>
                     <TableCell className="whitespace-nowrap text-sm text-gray-700">
                       {formatarDataHora(mov.dataHora)}
@@ -211,6 +216,10 @@ export default function MovimentacoesPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

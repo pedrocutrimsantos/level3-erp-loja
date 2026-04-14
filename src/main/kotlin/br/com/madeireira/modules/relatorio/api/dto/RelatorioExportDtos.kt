@@ -89,6 +89,8 @@ data class RelatorioEstoqueLinha(
     val saldoM3: String?,
     val saldoMetroLinear: String?,
     val saldoUnidade: String?,
+    val saldoPecas: Int?,            // apenas para MADEIRA com comprimentoPecaM configurado
+    val comprimentoPecaM: String?,   // comprimento da peça em metros (ex: "2.0")
 )
 
 // ── Relatório de Vendas por Vendedor ─────────────────────────────────────────

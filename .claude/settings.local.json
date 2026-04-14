@@ -38,7 +38,8 @@
       "Bash(find \"C:/Users/pedro/Repository/level3-loja-madeira/src\" -name \"NfItemData.kt\" -exec cat {} \\\\;)",
       "Bash(xargs cat:*)",
       "Bash(./gradlew compileKotlin --quiet)",
-      "Bash(ls -la docker-compose* .env*)"
+      "Bash(ls -la docker-compose* .env*)",
+      "Bash(grep -r \"limit\\\\|page\\\\|offset\\\\|size\" /c/Users/pedro/Repository/level3-loja-madeira/frontend/src/modules/*/hooks/*.ts)"
     ]
   }
 }

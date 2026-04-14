@@ -245,6 +245,7 @@ function SecaoEstoque() {
     { header: 'Unidade',       key: 'unidade',          widthChars: 10 },
     { header: 'Saldo m³',      key: 'saldoM3',          widthChars: 14 },
     { header: 'Saldo m Linear',key: 'saldoMetroLinear', widthChars: 16 },
+    { header: 'Peças',         key: 'saldoPecas',       widthChars: 12 },
     { header: 'Saldo Unid.',   key: 'saldoUnidade',     widthChars: 14 },
   ]
 
@@ -284,7 +285,7 @@ function SecaoEstoque() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <TableSkeleton rows={6} cols={7} />
+          <TableSkeleton rows={6} cols={8} />
         ) : !data || linhas.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Nenhum produto com saldo cadastrado.
@@ -318,6 +319,16 @@ function SecaoEstoque() {
                     <td className="px-2 py-1.5">{l.unidade}</td>
                     <td className="px-2 py-1.5 text-right font-mono">{l.saldoM3 ? `${parseFloat(l.saldoM3).toFixed(4)} m³` : '—'}</td>
                     <td className="px-2 py-1.5 text-right font-mono">{l.saldoMetroLinear ? `${parseFloat(l.saldoMetroLinear).toFixed(2)} m` : '—'}</td>
+                    <td className="px-2 py-1.5 text-right font-mono">
+                      {l.saldoPecas != null ? (
+                        <span>
+                          {l.saldoPecas.toLocaleString('pt-BR')}
+                          {l.comprimentoPecaM && (
+                            <span className="ml-1 text-muted-foreground">({l.comprimentoPecaM} m/pç)</span>
+                          )}
+                        </span>
+                      ) : '—'}
+                    </td>
                     <td className="px-2 py-1.5 text-right font-mono">{l.saldoUnidade ? `${parseFloat(l.saldoUnidade).toFixed(3)} ${l.unidade}` : '—'}</td>
                   </tr>
                 ))}

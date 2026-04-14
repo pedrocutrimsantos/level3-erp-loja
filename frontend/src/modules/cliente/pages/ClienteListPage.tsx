@@ -15,6 +15,8 @@ import {
 } from '@/shared/components/ui/Table'
 import { useClientes } from '../hooks/useClientes'
 import type { ClienteResponse } from '@/shared/api/clientes'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
 
 function statusBadge(status: ClienteResponse['statusInad']) {
@@ -66,6 +68,8 @@ export default function ClienteListPage() {
         c.telefone?.includes(termo),
     )
   }, [clientes, busca])
+
+  const { paginatedItems: clientesPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(filtrados)
 
   const emptyContent = (
     <EmptyState
@@ -160,7 +164,7 @@ export default function ClienteListPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filtrados.map((c) => (
+                      {clientesPaginados.map((c) => (
                         <TableRow key={c.id}>
                           <TableCell>
                             <Badge variant="outline">{c.tipoPessoa}</Badge>
@@ -192,12 +196,15 @@ export default function ClienteListPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  <div className="border-t border-border px-4 dark:border-[#243040]">
+                    <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+                  </div>
                 </CardContent>
               </Card>
 
               {/* Mobile: cards */}
               <MobileCardList>
-                {filtrados.map((c) => {
+                {clientesPaginados.map((c) => {
                   const st = statusBadge(c.statusInad)
                   return (
                     <MobileCard
@@ -234,6 +241,9 @@ export default function ClienteListPage() {
                   )
                 })}
               </MobileCardList>
+              <div className="md:hidden mt-2">
+                <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+              </div>
             </>
           )}
         </>

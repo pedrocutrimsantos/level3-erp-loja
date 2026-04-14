@@ -11,6 +11,8 @@ import {
 } from '@/shared/components/ui/Table'
 import { useTitulos, useBaixaTitulo, useCriarDespesa } from '../hooks/useTitulos'
 import type { TituloResponse } from '@/shared/api/titulos'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 // ── Mapeamentos de exibição ───────────────────────────────────────────────────
 
@@ -267,6 +269,8 @@ export default function TitulosPage() {
     limit:  200,
   })
 
+  const { paginatedItems: titulosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(titulos ?? [])
+
   return (
     <div>
       <PageHeader
@@ -350,6 +354,7 @@ export default function TitulosPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -365,7 +370,7 @@ export default function TitulosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {titulos.map((t) => {
+                {titulosPaginados.map((t) => {
                   const isVencido = t.dataVencimento && t.status === 'ABERTO' &&
                     new Date(t.dataVencimento) < new Date()
 
@@ -422,6 +427,10 @@ export default function TitulosPage() {
                 })}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

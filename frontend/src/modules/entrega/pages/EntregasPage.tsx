@@ -15,6 +15,8 @@ import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Printer, Truck, XCircle } from 'lucide-react'
 import { ConfirmarEntregaModal } from '../components/ConfirmarEntregaModal'
 import { entregasApi, type EntregaResumoResponse } from '@/shared/api/entregas'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { imprimirRomaneio } from '../utils/imprimirRomaneio'
 
 type Filtro = 'TODAS' | 'PENDENTE' | 'CONCLUIDA' | 'CANCELADA'
@@ -71,6 +73,8 @@ export default function EntregasPage() {
     if (!entregas) return []
     return filtro === 'TODAS' ? entregas : entregas.filter((e) => e.status === filtro)
   }, [entregas, filtro])
+
+  const { paginatedItems: entregasPaginadas, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(entregasFiltradas)
 
   async function handleImprimir(id: string, clienteNome: string | null) {
     setImprimindoId(id)
@@ -151,6 +155,7 @@ export default function EntregasPage() {
       )}
 
       {!isLoading && !isError && entregasFiltradas.length > 0 && (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -166,7 +171,7 @@ export default function EntregasPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entregasFiltradas.map((e) => (
+            {entregasPaginadas.map((e) => (
               <TableRow key={e.id}>
                 <TableCell className="font-mono text-sm font-medium">{e.numero}</TableCell>
                 <TableCell className="font-mono text-sm">{e.vendaNumero}</TableCell>
@@ -241,6 +246,8 @@ export default function EntregasPage() {
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} className="px-2" />
+        </>
       )}
 
       {confirmarId && (

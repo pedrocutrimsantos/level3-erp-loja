@@ -14,6 +14,8 @@ import { Badge } from '@/shared/components/ui/Badge'
 import { Button } from '@/shared/components/ui/Button'
 import { Input } from '@/shared/components/ui/Input'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { Pagination } from '@/shared/components/ui/Pagination'
+import { usePagination } from '@/shared/hooks/usePagination'
 import { History, Printer, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
@@ -141,6 +143,8 @@ export default function VendaHistoricoPage() {
     })
   }, [vendas, busca, statusFiltro, dataInicio, dataFim])
 
+  const { paginatedItems: vendasPaginadas, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(vendasFiltradas)
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -238,6 +242,7 @@ export default function VendaHistoricoPage() {
       )}
 
       {!isLoading && !isError && vendasFiltradas.length > 0 && (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -253,7 +258,7 @@ export default function VendaHistoricoPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {vendasFiltradas.map((venda) => (
+            {vendasPaginadas.map((venda) => (
               <TableRow
                 key={venda.vendaId}
                 className="cursor-pointer"
@@ -324,6 +329,8 @@ export default function VendaHistoricoPage() {
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} className="px-2" />
+        </>
       )}
 
       {entregaVenda && (

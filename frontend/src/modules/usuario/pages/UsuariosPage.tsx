@@ -16,6 +16,8 @@ import {
   TableCell,
 } from '@/shared/components/ui/Table'
 import { useAuthStore } from '@/shared/store/authStore'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import {
   useUsuarios,
   usePerfis,
@@ -242,6 +244,8 @@ export default function UsuariosPage() {
   const reenviar = useReenviarPrimeiroAcesso()
   const userId = useAuthStore((s) => s.userId)
 
+  const { paginatedItems: usuariosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(usuarios ?? [])
+
   const [modalAberto, setModalAberto] = useState(false)
   const [editando, setEditando] = useState<UsuarioResponse | null>(null)
 
@@ -294,6 +298,7 @@ export default function UsuariosPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -307,7 +312,7 @@ export default function UsuariosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usuarios.map((u) => (
+                {usuariosPaginados.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium text-sm">{u.nome}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
@@ -381,6 +386,10 @@ export default function UsuariosPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

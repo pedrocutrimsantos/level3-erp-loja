@@ -21,6 +21,8 @@ import { AjusteEstoqueModal } from '../components/AjusteEstoqueModal'
 import type { ProdutoResponse } from '@/shared/api/produtos'
 import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
 import { Perms } from '@/shared/utils/permissions'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 interface ProdutoLinhaProps {
   produto: ProdutoResponse
@@ -34,9 +36,13 @@ function ProdutoLinha({ produto, onAjuste, apenasComSaldo }: ProdutoLinhaProps) 
   const podeAjustar = useTemPermissao(Perms.EST_AJUSTE)
 
   const saldoM3 = saldo ? parseFloat(saldo.saldoM3) : null
+  const saldoUnidade = saldo?.saldoUnidade != null ? parseFloat(saldo.saldoUnidade) : null
 
   // Quando o filtro está ativo, oculta linhas sem saldo (aguarda o carregamento antes de esconder)
-  if (!isLoading && apenasComSaldo && (saldoM3 == null || saldoM3 <= 0)) return null
+  const temSaldo = produto.tipo === 'MADEIRA'
+    ? (saldoM3 != null && saldoM3 > 0)
+    : (saldoUnidade != null && saldoUnidade > 0)
+  if (!isLoading && apenasComSaldo && !temSaldo) return null
   const saldoMetros =
     saldo?.saldoMetrosLineares != null ? parseFloat(saldo.saldoMetrosLineares) : null
   const dataAtualizacao = saldo?.dataUltimaAtualizacao ?? null
@@ -62,6 +68,8 @@ function ProdutoLinha({ produto, onAjuste, apenasComSaldo }: ProdutoLinhaProps) 
       <TableCell className="tabular-nums text-sm">
         {isLoading ? (
           <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+        ) : produto.tipo !== 'MADEIRA' ? (
+          <span className="text-muted-foreground">—</span>
         ) : saldoM3 != null ? (
           <span
             className={
@@ -75,10 +83,10 @@ function ProdutoLinha({ produto, onAjuste, apenasComSaldo }: ProdutoLinhaProps) 
         )}
       </TableCell>
       <TableCell className="tabular-nums text-sm">
-        {produto.tipo === 'MADEIRA' ? (
-          isLoading ? (
-            <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-          ) : saldoMetros != null ? (
+        {isLoading ? (
+          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+        ) : produto.tipo === 'MADEIRA' ? (
+          saldoMetros != null ? (
             <span className="text-foreground/80">
               {formatarMetros(saldoMetros)} m
               {saldo?.saldoPecas != null && (
@@ -90,6 +98,11 @@ function ProdutoLinha({ produto, onAjuste, apenasComSaldo }: ProdutoLinhaProps) 
           ) : (
             <span className="text-muted-foreground">—</span>
           )
+        ) : saldo?.saldoUnidade != null ? (
+          <span className={parseFloat(saldo.saldoUnidade) <= 0 ? 'text-red-600 font-semibold' : 'text-foreground'}>
+            {parseFloat(saldo.saldoUnidade).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+            {saldo.unidadeSigla && <span className="ml-1 text-xs text-muted-foreground">{saldo.unidadeSigla}</span>}
+          </span>
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
@@ -145,6 +158,8 @@ export default function EstoqueListPage() {
 
   const { data: produtos, isLoading, isError } = useProdutos(true)
 
+  const { paginatedItems: produtosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(produtos ?? [])
+
   return (
     <div>
       <PageHeader
@@ -184,6 +199,7 @@ export default function EstoqueListPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -191,13 +207,13 @@ export default function EstoqueListPage() {
                   <TableHead>Código</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Saldo m³</TableHead>
-                  <TableHead>Metro Linear</TableHead>
+                  <TableHead>Metro Linear / Qtd.</TableHead>
                   <TableHead>Última Atualização</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {produtos.map((produto) => (
+                {produtosPaginados.map((produto) => (
                   <ProdutoLinha
                     key={produto.id}
                     produto={produto}
@@ -207,6 +223,10 @@ export default function EstoqueListPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

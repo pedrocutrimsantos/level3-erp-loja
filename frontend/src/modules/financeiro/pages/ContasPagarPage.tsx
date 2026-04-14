@@ -12,6 +12,8 @@ import {
 import { useTitulos, useBaixaTitulo, useCriarDespesa, useCancelarTitulo, useResumoPagar } from '../hooks/useTitulos'
 import { useFornecedores } from '@/modules/fornecedor/hooks/useFornecedores'
 import type { TituloResponse } from '@/shared/api/titulos'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -474,6 +476,8 @@ export default function ContasPagarPage() {
     return titulos.filter((t) => t.categoria === filtroCategoria)
   }, [titulos, filtroCategoria])
 
+  const { paginatedItems: titulosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(titulosFiltrados)
+
   const categoriasDisponiveis = useMemo(() => {
     if (!titulos) return []
     const set = new Set(titulos.map((t) => t.categoria).filter(Boolean) as string[])
@@ -599,6 +603,7 @@ export default function ContasPagarPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -614,7 +619,7 @@ export default function ContasPagarPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {titulosFiltrados.map((t) => {
+                {titulosPaginados.map((t) => {
                   const vencido = isVencido(t)
                   const catLabel = t.categoria
                     ? (CATEGORIAS.find((c) => c.value === t.categoria)?.label ?? t.categoria)
@@ -695,6 +700,10 @@ export default function ContasPagarPage() {
                 })}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

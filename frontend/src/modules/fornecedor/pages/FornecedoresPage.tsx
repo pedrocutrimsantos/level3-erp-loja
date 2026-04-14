@@ -11,6 +11,8 @@ import {
 } from '@/shared/components/ui/Table'
 import { useFornecedores, useCriarFornecedor } from '../hooks/useFornecedores'
 import type { CriarFornecedorRequest } from '@/shared/api/fornecedores'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 
 function TableSkeleton() {
   return (
@@ -174,6 +176,8 @@ export default function FornecedoresPage() {
     )
   }, [fornecedores, busca])
 
+  const { paginatedItems: fornecedoresPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(filtrados)
+
   return (
     <div>
       <PageHeader
@@ -220,6 +224,7 @@ export default function FornecedoresPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -232,7 +237,7 @@ export default function FornecedoresPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtrados.map((f) => (
+                {fornecedoresPaginados.map((f) => (
                   <TableRow key={f.id}>
                     <TableCell>
                       <Badge variant="outline">{f.tipoPessoa}</Badge>
@@ -253,6 +258,10 @@ export default function FornecedoresPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

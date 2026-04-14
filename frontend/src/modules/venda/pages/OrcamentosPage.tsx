@@ -10,6 +10,8 @@ import {
 } from '@/shared/components/ui/Table'
 import { useOrcamentos, useConfirmarOrcamento, useCancelarOrcamento } from '../hooks/useVenda'
 import type { OrcamentoDetalheResponse } from '@/shared/api/vendas'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
 import { Perms } from '@/shared/utils/permissions'
 
@@ -248,6 +250,8 @@ export default function OrcamentosPage() {
   const [paraConfirmar, setParaConfirmar] = useState<OrcamentoDetalheResponse | null>(null)
   const [paraCancelar, setParaCancelar] = useState<OrcamentoDetalheResponse | null>(null)
 
+  const { paginatedItems: orcamentosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(orcamentos ?? [])
+
   return (
     <div>
       <PageHeader
@@ -278,6 +282,7 @@ export default function OrcamentosPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -292,7 +297,7 @@ export default function OrcamentosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orcamentos.map((orc) => (
+                {orcamentosPaginados.map((orc) => (
                   <OrcamentoLinha
                     key={orc.vendaId}
                     orc={orc}
@@ -302,6 +307,10 @@ export default function OrcamentosPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

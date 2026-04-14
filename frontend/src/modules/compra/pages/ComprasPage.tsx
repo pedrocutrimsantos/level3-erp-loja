@@ -13,6 +13,8 @@ import {
 import { useProdutos } from '@/modules/produto/hooks/useProdutos'
 import { EntradaCompraModal } from '../components/EntradaCompraModal'
 import { useEntradas } from '../hooks/useCompra'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import type { ProdutoResponse } from '@/shared/api/produtos'
 
 // ── Modal: seletor de produto para entrada ────────────────────────────────────
@@ -116,6 +118,8 @@ function TableSkeleton() {
 export default function ComprasPage() {
   const { data: entradas, isLoading, isError } = useEntradas(100)
 
+  const { paginatedItems: entradasPaginadas, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(entradas ?? [])
+
   const [seletorAberto, setSeletorAberto] = useState(false)
   const [produtoParaEntrada, setProdutoParaEntrada] = useState<ProdutoResponse | null>(null)
 
@@ -160,6 +164,7 @@ export default function ComprasPage() {
               className="py-16"
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -172,7 +177,7 @@ export default function ComprasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entradas.map((e) => {
+                {entradasPaginadas.map((e) => {
                   const qtd = e.tipoProduto === 'MADEIRA'
                     ? `${parseFloat(e.quantidadeM3 ?? '0').toFixed(4)} m³`
                     : `${parseFloat(e.quantidadeUnidade ?? '0').toLocaleString('pt-BR', { maximumFractionDigits: 4 })} ${e.unidadeSigla}`
@@ -209,6 +214,10 @@ export default function ComprasPage() {
                 })}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

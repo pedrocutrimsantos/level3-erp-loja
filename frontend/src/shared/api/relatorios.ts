@@ -73,6 +73,8 @@ export interface RelatorioEstoqueLinha {
   saldoM3: string | null
   saldoMetroLinear: string | null
   saldoUnidade: string | null
+  saldoPecas: number | null
+  comprimentoPecaM: string | null
 }
 
 export interface RelatorioEstoqueResponse {

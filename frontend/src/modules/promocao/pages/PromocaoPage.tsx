@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { Tag, Plus, Pencil, Trash2, X, Check, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { Badge } from '@/shared/components/ui/Badge'
@@ -329,6 +331,7 @@ export default function PromocaoPage() {
 
   const { data: promocoes = [], isLoading } = usePromocoes()
   const desativar = useDesativarPromocao()
+  const { paginatedItems: promocoesPaginadas, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(promocoes)
 
   function abrirNova() {
     setEditando(null)
@@ -369,6 +372,7 @@ export default function PromocaoPage() {
               action={<Button onClick={abrirNova}><Plus className="h-4 w-4 mr-1" />Nova promoção</Button>}
             />
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -383,7 +387,7 @@ export default function PromocaoPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {promocoes.map((p) => (
+                {promocoesPaginadas.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">
                       <div>{p.nome}</div>
@@ -446,6 +450,10 @@ export default function PromocaoPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="border-t border-border px-4 dark:border-[#243040]">
+              <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { usePagination } from '@/shared/hooks/usePagination'
+import { Pagination } from '@/shared/components/ui/Pagination'
 import { Eye, Pencil, Trash2 } from 'lucide-react'
 import {
   Table,
@@ -122,6 +124,7 @@ export function ProdutoTable({ produtos }: ProdutoTableProps) {
   const navigate = useNavigate()
   const [editando, setEditando] = useState<ProdutoResponse | null>(null)
   const [inativando, setInativando] = useState<ProdutoResponse | null>(null)
+  const { paginatedItems: produtosPaginados, page, setPage, perPage, setPerPage, totalPages, totalItems } = usePagination(produtos)
 
   return (
     <>
@@ -138,7 +141,7 @@ export function ProdutoTable({ produtos }: ProdutoTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {produtos.map((produto) => (
+          {produtosPaginados.map((produto) => (
             <TableRow key={produto.id}>
               <TableCell className="font-mono text-xs">{produto.codigo}</TableCell>
               <TableCell className="font-medium">{produto.descricao}</TableCell>
@@ -191,6 +194,9 @@ export function ProdutoTable({ produtos }: ProdutoTableProps) {
           ))}
         </TableBody>
       </Table>
+      <div className="border-t border-border px-4 dark:border-[#243040]">
+        <Pagination page={page} totalPages={totalPages} totalItems={totalItems} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} />
+      </div>
 
       {editando && <EditModal produto={editando} onClose={() => setEditando(null)} />}
       {inativando && <ConfirmDelete produto={inativando} onClose={() => setInativando(null)} />}

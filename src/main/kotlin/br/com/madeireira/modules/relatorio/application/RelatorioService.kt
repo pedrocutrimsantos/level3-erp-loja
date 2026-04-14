@@ -173,21 +173,28 @@ class RelatorioService {
                 .associate { it[DimensaoMadeiraTable.produtoId] to it[DimensaoMadeiraTable.fatorConversao] }
 
         val linhas = rows.map { row ->
-            val tipo   = row[ProdutoTable.tipo]
-            val saldoM3 = row[EstoqueSaldoTable.saldoM3Disponivel]
-            val fator  = fatores[row[ProdutoTable.id]]
+            val tipo           = row[ProdutoTable.tipo]
+            val saldoM3        = row[EstoqueSaldoTable.saldoM3Disponivel]
+            val fator          = fatores[row[ProdutoTable.id]]
+            val comprimentoRaw = row[ProdutoTable.comprimentoPecaM]
+            val metrosLineares = if (tipo == TipoProduto.MADEIRA)
+                fator?.let { ConversionEngine.m3ParaLinear(saldoM3, it) }
+                else null
+            val saldoPecas = if (tipo == TipoProduto.MADEIRA && comprimentoRaw != null && comprimentoRaw > BigDecimal.ZERO && metrosLineares != null)
+                metrosLineares.divide(comprimentoRaw, 0, RoundingMode.FLOOR).toInt()
+                else null
             RelatorioEstoqueLinha(
                 codigo           = row[ProdutoTable.codigo],
                 descricao        = row[ProdutoTable.descricao],
                 tipo             = tipo.name,
                 unidade          = row[UnidadeMedidaTable.codigo],
                 saldoM3          = if (tipo == TipoProduto.MADEIRA) saldoM3.toPlainString() else null,
-                saldoMetroLinear = if (tipo == TipoProduto.MADEIRA)
-                    fator?.let { ConversionEngine.m3ParaLinear(saldoM3, it).toPlainString() }
-                    else null,
+                saldoMetroLinear = metrosLineares?.toPlainString(),
                 saldoUnidade     = if (tipo == TipoProduto.NORMAL)
                     row[EstoqueSaldoTable.saldoUnidadeDisponivel].toPlainString()
                     else null,
+                saldoPecas       = saldoPecas,
+                comprimentoPecaM = comprimentoRaw?.takeIf { tipo == TipoProduto.MADEIRA && it > BigDecimal.ZERO }?.toPlainString(),
             )
         }.sortedWith(compareBy({ it.tipo }, { it.descricao }))
 
