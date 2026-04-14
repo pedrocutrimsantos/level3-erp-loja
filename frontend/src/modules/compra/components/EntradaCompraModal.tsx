@@ -43,6 +43,7 @@ export function EntradaCompraModal({ produtoId, open, onClose }: EntradaCompraMo
   const [formaPagamentoPrevisto, setFormaPagamentoPrevisto] = useState('BOLETO')
   const [errors, setErrors] = useState<FormErrors>({})
   const [resultado, setResultado] = useState<EntradaCompraResponse | null>(null)
+  const [confirmando, setConfirmando] = useState(false)
 
   const isMadeira = produto?.tipo === 'MADEIRA'
   const espessuraM = produto?.dimensaoVigente?.espessuraM ?? null
@@ -117,10 +118,14 @@ export function EntradaCompraModal({ produtoId, open, onClose }: EntradaCompraMo
     return Object.keys(erros).length === 0
   }
 
+  // Abre o painel de resumo após validação
   function handleConfirmar() {
     if (!validar()) return
+    setConfirmando(true)
+  }
 
-    // API sempre recebe em m³ para produtos MADEIRA
+  // Chamado somente após o usuário confirmar no resumo
+  function handleRegistrar() {
     const quantidadeAPI = isMadeira
       ? (entradaM3 ?? qtdNum).toFixed(4)
       : qtdNum.toFixed(4)
@@ -135,7 +140,7 @@ export function EntradaCompraModal({ produtoId, open, onClose }: EntradaCompraMo
         ...(fornecedorId && dataVencimento ? { dataVencimento } : {}),
         ...(fornecedorId ? { formaPagamentoPrevisto } : {}),
       },
-      { onSuccess: (data) => setResultado(data) },
+      { onSuccess: (data) => { setConfirmando(false); setResultado(data) } },
     )
   }
 
@@ -148,6 +153,7 @@ export function EntradaCompraModal({ produtoId, open, onClose }: EntradaCompraMo
     setFormaPagamentoPrevisto('BOLETO')
     setErrors({})
     setResultado(null)
+    setConfirmando(false)
     setModo('m3')
     reset()
     onClose()
@@ -203,6 +209,97 @@ export function EntradaCompraModal({ produtoId, open, onClose }: EntradaCompraMo
                 <span className="font-bold font-mono">{resultado.tituloPagarNumero}</span>
               </p>
             )}
+          </div>
+        </div>
+      </Modal>
+    )
+  }
+
+  // ── Resumo de confirmação ───────────────────────────────────────────────────
+
+  if (confirmando) {
+    const custoNum = parseFloat(custoUnitario)
+    const custoValido = !isNaN(custoNum) && custoNum > 0
+
+    const qtdExibida = isMadeira
+      ? (modo === 'pecas'
+        ? `${qtdNum} peças → ${formatarM3(entradaM3!)} m³`
+        : `${formatarM3(qtdNum)} m³`)
+      : `${qtdNum.toLocaleString('pt-BR', { maximumFractionDigits: 4 })} ${unidade}`
+
+    const metrosExibidos =
+      isMadeira && entradaLinear != null
+        ? `${formatarMetros(entradaLinear)} m lineares`
+        : null
+
+    const valorTotal =
+      custoValido && entradaM3 != null && isMadeira
+        ? (custoNum * entradaM3).toFixed(2)
+        : custoValido && !isMadeira
+        ? (custoNum * qtdNum).toFixed(2)
+        : null
+
+    const fornecedorNome = fornecedores?.find((f) => f.id === fornecedorId)?.razaoSocial ?? null
+
+    const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
+      <div className="flex justify-between gap-4 py-1.5 border-b last:border-0 text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium text-right">{value}</span>
+      </div>
+    )
+
+    return (
+      <Modal
+        open={open}
+        onClose={handleFechar}
+        title="Confirmar entrada de compra"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setConfirmando(false)} disabled={isPending}>
+              Voltar
+            </Button>
+            <Button onClick={handleRegistrar} loading={isPending}>
+              Confirmar
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Revise os dados abaixo antes de registrar a entrada no estoque.
+          </p>
+
+          <div className="rounded-md border bg-muted/20 px-4 py-2 divide-y divide-border">
+            <Row label="Produto" value={produto ? `${produto.descricao} (${produto.codigo})` : '—'} />
+            <Row label="Quantidade" value={qtdExibida} />
+            {metrosExibidos && <Row label="Metros lineares" value={metrosExibidos} />}
+            {custoValido && (
+              <Row
+                label={`Custo unitário (/${modo === 'pecas' ? 'peça' : unidade})`}
+                value={custoNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              />
+            )}
+            {valorTotal && (
+              <Row
+                label="Valor total estimado"
+                value={
+                  <span className="text-green-700 font-semibold">
+                    {parseFloat(valorTotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                }
+              />
+            )}
+            {fornecedorNome && <Row label="Fornecedor" value={fornecedorNome} />}
+            {fornecedorId && dataVencimento && (
+              <Row
+                label="Vencimento"
+                value={new Date(dataVencimento + 'T12:00:00').toLocaleDateString('pt-BR')}
+              />
+            )}
+            {fornecedorId && (
+              <Row label="Forma de pagamento" value={formaPagamentoPrevisto} />
+            )}
+            <Row label="Observação" value={<span className="max-w-xs text-right line-clamp-2">{observacao}</span>} />
           </div>
         </div>
       </Modal>

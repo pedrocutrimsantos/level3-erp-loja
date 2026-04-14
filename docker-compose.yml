@@ -1,0 +1,117 @@
+version: '3.9'
+
+# ── Madex ERP — Docker Compose ────────────────────────────────────────────────
+#
+# Uso local / produção single-host:
+#   1. cp .env.example .env  e preencha as variáveis obrigatórias
+#   2. docker compose up -d
+#
+# Serviços:
+#   postgres  — banco de dados (PostgreSQL 15)
+#   backend   — API Ktor (JVM 17) na porta 8080
+#   frontend  — SPA React servida via nginx na porta 80
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: madex-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-madeireira}
+      POSTGRES_USER:     ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-madeireira}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - madex
+
+  # ── Backend (Ktor) ───────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: madex-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Banco
+      DB_URL:      jdbc:postgresql://postgres:5432/${DB_NAME:-madeireira}
+      DB_USER:     ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # JWT
+      JWT_SECRET:  ${JWT_SECRET}
+
+      # Multi-tenancy
+      DEFAULT_TENANT:       ${DEFAULT_TENANT:-piloto}
+      USE_SUBDOMAIN_TENANT: ${USE_SUBDOMAIN_TENANT:-false}
+      SUPER_ADMIN_KEY:      ${SUPER_ADMIN_KEY}
+
+      # Ambiente
+      KTOR_ENV:        ${KTOR_ENV:-production}
+      PORT:            8080
+      ALLOWED_ORIGIN:  ${ALLOWED_ORIGIN:-}
+
+      # NF-e
+      NFE_AMBIENTE:           ${NFE_AMBIENTE:-homologacao}
+      NFE_PRODUCAO_CONFIRMADO: ${NFE_PRODUCAO_CONFIRMADO:-false}
+      NFE_XML_DIR:            /var/data/nfe/xml
+
+      # ICP-Brasil (certificado SEFAZ) — opcional em homologação
+      ICP_BRASIL_TRUSTSTORE_PATH:     ${ICP_BRASIL_TRUSTSTORE_PATH:-}
+      ICP_BRASIL_TRUSTSTORE_PASSWORD: ${ICP_BRASIL_TRUSTSTORE_PASSWORD:-changeit}
+
+      # SMS Redbot — opcional
+      REDBOT_URL: ${REDBOT_URL:-}
+      REDBOT_KEY: ${REDBOT_KEY:-}
+
+    volumes:
+      # XMLs de NF-e autorizadas (persistidos fora do container)
+      - nfe_xml:/var/data/nfe/xml
+      # Truststore ICP-Brasil (opcional — monte se usar NFE_AMBIENTE=producao)
+      # - ./certs/icp-brasil.jks:/certs/icp-brasil.jks:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - madex
+
+  # ── Frontend (React → nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api}
+    container_name: madex-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - madex
+
+volumes:
+  pgdata:
+  nfe_xml:
+
+networks:
+  madex:
+    driver: bridge

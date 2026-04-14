@@ -19,6 +19,8 @@ import { useProdutos } from '@/modules/produto/hooks/useProdutos'
 import { useSaldoEstoque } from '../hooks/useEstoque'
 import { AjusteEstoqueModal } from '../components/AjusteEstoqueModal'
 import type { ProdutoResponse } from '@/shared/api/produtos'
+import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
+import { Perms } from '@/shared/utils/permissions'
 
 interface ProdutoLinhaProps {
   produto: ProdutoResponse
@@ -28,6 +30,7 @@ interface ProdutoLinhaProps {
 function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
   const navigate = useNavigate()
   const { data: saldo, isLoading } = useSaldoEstoque(produto.id)
+  const podeAjustar = useTemPermissao(Perms.EST_AJUSTE)
 
   const saldoM3 = saldo ? parseFloat(saldo.saldoM3) : null
   const saldoMetros =
@@ -111,9 +114,11 @@ function ProdutoLinha({ produto, onAjuste }: ProdutoLinhaProps) {
           >
             Detalhes
           </Button>
-          <Button size="sm" onClick={() => onAjuste(produto.id)}>
-            Ajuste
-          </Button>
+          {podeAjustar && (
+            <Button size="sm" onClick={() => onAjuste(produto.id)}>
+              Ajuste
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>

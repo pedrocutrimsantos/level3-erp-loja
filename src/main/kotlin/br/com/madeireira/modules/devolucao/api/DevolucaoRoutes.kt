@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.devolucao.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.devolucao.api.dto.RegistrarDevolucaoRequest
 import br.com.madeireira.modules.devolucao.application.DevolucaoService
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
@@ -15,17 +17,17 @@ import java.util.UUID
 
 fun Route.devolucaoRoutes(service: DevolucaoService) {
 
-    // GET /api/v1/devolucoes  — lista todas as devoluções
     route("/api/v1/devolucoes") {
         get {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
             val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 200
             call.respond(HttpStatusCode.OK, service.listarTodas(limit))
         }
     }
 
     route("/api/v1/vendas") {
-            // GET /api/v1/vendas/{id}/itens  — lista itens para o modal de devolução
             get("{id}/itens") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: return@get call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 try {
@@ -35,8 +37,8 @@ fun Route.devolucaoRoutes(service: DevolucaoService) {
                 }
             }
 
-            // POST /api/v1/vendas/{id}/devolver
             post("{id}/devolver") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.CRIAR))) return@post
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: return@post call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 val req = try {
@@ -45,8 +47,7 @@ fun Route.devolucaoRoutes(service: DevolucaoService) {
                     return@post call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
                 }
                 try {
-                    val resp = service.registrarDevolucao(id, req)
-                    call.respond(HttpStatusCode.Created, resp)
+                    call.respond(HttpStatusCode.Created, service.registrarDevolucao(id, req))
                 } catch (e: NoSuchElementException) {
                     call.respond(HttpStatusCode.NotFound, ErroResponse("Não encontrado", e.message))
                 } catch (e: IllegalArgumentException) {

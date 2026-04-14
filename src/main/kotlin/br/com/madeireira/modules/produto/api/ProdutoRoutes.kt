@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.produto.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.produto.api.dto.AtualizarDimensaoRequest
 import br.com.madeireira.modules.produto.api.dto.AtualizarPrecoRequest
 import br.com.madeireira.modules.produto.api.dto.AtualizarProdutoRequest
@@ -25,12 +27,14 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // GET /api/v1/produtos/unidades
             get("unidades") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
                 val unidades = service.listarUnidades()
                 call.respond(HttpStatusCode.OK, unidades)
             }
 
             // GET /api/v1/produtos?ativo=true|false&q=termo
             get {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
                 val ativoParam = call.request.queryParameters["ativo"]
                 val apenasAtivos = ativoParam?.lowercase() != "false"
                 val q = call.request.queryParameters["q"]?.takeIf { it.isNotBlank() }
@@ -40,6 +44,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // GET /api/v1/produtos/{id}
             get("{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(
                         HttpStatusCode.BadRequest,
@@ -57,6 +62,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // POST /api/v1/produtos
             post {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.CRIAR))) return@post
                 val req = try {
                     call.receive<CriarProdutoRequest>()
                 } catch (e: Exception) {
@@ -79,6 +85,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // PUT /api/v1/produtos/{id}
             put("{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EDITAR))) return@put
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'id' não é um UUID válido"))
                     return@put
@@ -101,6 +108,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // DELETE /api/v1/produtos/{id}  — soft delete (inativa)
             delete("{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EXCLUIR))) return@delete
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'id' não é um UUID válido"))
                     return@delete
@@ -115,6 +123,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // GET /api/v1/produtos/{id}/precificacao
             get("{id}/precificacao") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'id' não é um UUID válido"))
                     return@get
@@ -129,6 +138,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // PUT /api/v1/produtos/{id}/precificacao
             put("{id}/precificacao") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EDITAR))) return@put
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'id' não é um UUID válido"))
                     return@put
@@ -151,6 +161,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // PATCH /api/v1/produtos/{id}/preco
             patch("{id}/preco") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EDITAR))) return@patch
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'id' não é um UUID válido"))
                     return@patch
@@ -171,6 +182,7 @@ fun Route.produtoRoutes(service: ProdutoService) {
 
             // PUT /api/v1/produtos/{id}/dimensao
             put("{id}/dimensao") {
+                if (!call.requerPermissao(Permissions.CFG_ALTERAR_DIMENSAO)) return@put
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(
                         HttpStatusCode.BadRequest,

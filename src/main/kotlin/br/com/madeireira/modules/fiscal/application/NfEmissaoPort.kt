@@ -36,12 +36,20 @@ data class NfCancelamentoResult(
 
 interface NfEmissaoPort {
     suspend fun emitir(request: NfEmissaoRequest): NfEmissaoResult
-    suspend fun cancelar(vendaId: UUID, chaveAcesso: String, justificativa: String): NfCancelamentoResult
+    suspend fun cancelar(
+        vendaId: UUID,
+        chaveAcesso: String,
+        justificativa: String,
+        nProt: String = "",
+    ): NfCancelamentoResult
 
     /**
-     * Consulta o status atual de uma NF-e na SEFAZ via provider externo.
+     * Consulta o status atual de uma NF-e por chave de acesso (44 dígitos).
      * Usada para reprocessar NF-e que ficaram em [StatusNf.AGUARDANDO] por timeout.
-     * Retorna null se o provider não suporta consulta avulsa.
+     * Retorna null se o adapter não suporta consulta avulsa (ex: stub).
      */
+    suspend fun consultarPorChave(chaveAcesso: String): NfEmissaoResult? = null
+
+    /** @deprecated use consultarPorChave */
     suspend fun consultarStatus(vendaId: UUID): NfEmissaoResult? = null
 }

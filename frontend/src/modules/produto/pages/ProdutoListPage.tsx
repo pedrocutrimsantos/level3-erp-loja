@@ -8,6 +8,8 @@ import { Button } from '@/shared/components/ui/Button'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Card, CardContent } from '@/shared/components/ui/Card'
 import { FilterBar, FilterField } from '@/shared/components/layout/PageLayout'
+import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
+import { Perms } from '@/shared/utils/permissions'
 
 function TableSkeleton() {
   return (
@@ -23,6 +25,7 @@ export default function ProdutoListPage() {
   const navigate = useNavigate()
   const [apenasAtivos, setApenasAtivos] = useState(true)
   const { data: produtos, isLoading, isError } = useProdutos(apenasAtivos)
+  const podeCriar = useTemPermissao(Perms.CAD_CRIAR)
 
   return (
     <div>
@@ -30,9 +33,11 @@ export default function ProdutoListPage() {
         title="Produtos"
         subtitle="Gerencie o catálogo de produtos da madeireira"
         actions={
-          <Button onClick={() => navigate('/produtos/novo')}>
-            + Novo Produto
-          </Button>
+          podeCriar ? (
+            <Button onClick={() => navigate('/produtos/novo')}>
+              + Novo Produto
+            </Button>
+          ) : undefined
         }
       />
 
@@ -73,9 +78,11 @@ export default function ProdutoListPage() {
                   : 'Não há produtos cadastrados.'
               }
               action={
-                <Button size="sm" onClick={() => navigate('/produtos/novo')}>
-                  + Novo Produto
-                </Button>
+                podeCriar ? (
+                  <Button size="sm" onClick={() => navigate('/produtos/novo')}>
+                    + Novo Produto
+                  </Button>
+                ) : undefined
               }
               className="py-16"
             />

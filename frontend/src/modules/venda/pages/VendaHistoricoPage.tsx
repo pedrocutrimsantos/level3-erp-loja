@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useVendas } from '../hooks/useVenda'
+import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
+import { Perms } from '@/shared/utils/permissions'
 import {
   Table,
   TableHeader,
@@ -95,6 +97,9 @@ export default function VendaHistoricoPage() {
   const [entregaVenda,   setEntregaVenda]   = useState<{ id: string; numero: string } | null>(null)
   const [imprimindoId,   setImprimindoId]   = useState<string | null>(null)
   const [detalheVendaId, setDetalheVendaId] = useState<string | null>(null)
+
+  const podeEntregar = useTemPermissao(Perms.ENT_CRIAR)
+  const podeDevolver = useTemPermissao(Perms.VEN_CRIAR)
 
   async function handleImprimir(vendaId: string) {
     setImprimindoId(vendaId)
@@ -295,7 +300,7 @@ export default function VendaHistoricoPage() {
                         ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                         : <Printer className="h-3.5 w-3.5" />}
                     </Button>
-                    {PODE_ENTREGAR.has(venda.status) && (
+                    {podeEntregar && PODE_ENTREGAR.has(venda.status) && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -304,7 +309,7 @@ export default function VendaHistoricoPage() {
                         Entregar
                       </Button>
                     )}
-                    {PODE_DEVOLVER.has(venda.status) && (
+                    {podeDevolver && PODE_DEVOLVER.has(venda.status) && (
                       <Button
                         size="sm"
                         variant="ghost"

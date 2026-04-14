@@ -1,6 +1,9 @@
 package br.com.madeireira.modules.usuario.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
+import br.com.madeireira.modules.usuario.api.dto.AtualizarPerfilDto
 import br.com.madeireira.modules.usuario.api.dto.AtualizarUsuarioDto
 import br.com.madeireira.modules.usuario.api.dto.CriarUsuarioDto
 import br.com.madeireira.modules.usuario.application.UsuarioService
@@ -20,9 +23,57 @@ import java.util.UUID
 
 fun Route.usuarioRoutes(service: UsuarioService) {
 
+    // ── Rotas do próprio usuário autenticado ──────────────────────────────────
+
+    route("/api/v1/me") {
+
+        // GET /api/v1/me — retorna o perfil do usuário logado
+        get {
+            val id = call.principal<JWTPrincipal>()?.payload?.subject
+                ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                ?: run {
+                    call.respond(HttpStatusCode.Unauthorized, ErroResponse("Token inválido"))
+                    return@get
+                }
+            try {
+                call.respond(HttpStatusCode.OK, service.buscarPorId(id))
+            } catch (e: NoSuchElementException) {
+                call.respond(HttpStatusCode.NotFound, ErroResponse("Usuário não encontrado"))
+            }
+        }
+
+        // PUT /api/v1/me — atualiza nome e telefone do usuário logado
+        put {
+            val id = call.principal<JWTPrincipal>()?.payload?.subject
+                ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+                ?: run {
+                    call.respond(HttpStatusCode.Unauthorized, ErroResponse("Token inválido"))
+                    return@put
+                }
+            val dto = try {
+                call.receive<AtualizarPerfilDto>()
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
+                return@put
+            }
+            try {
+                val atualizado = service.atualizar(id, AtualizarUsuarioDto(
+                    nome     = dto.nome,
+                    telefone = dto.telefone,
+                ))
+                call.respond(HttpStatusCode.OK, atualizado)
+            } catch (e: IllegalArgumentException) {
+                call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro de validação", e.message))
+            } catch (e: NoSuchElementException) {
+                call.respond(HttpStatusCode.NotFound, ErroResponse("Usuário não encontrado"))
+            }
+        }
+    }
+
     // GET /api/v1/perfis
     route("/api/v1/perfis") {
         get {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.VISUALIZAR))) return@get
             call.respond(HttpStatusCode.OK, service.listarPerfis())
         }
     }
@@ -31,11 +82,13 @@ fun Route.usuarioRoutes(service: UsuarioService) {
 
         // GET /api/v1/usuarios
         get {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.VISUALIZAR))) return@get
             call.respond(HttpStatusCode.OK, service.listar())
         }
 
         // GET /api/v1/usuarios/:id
         get("{id}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.VISUALIZAR))) return@get
             val id = parseUUID(call.parameters["id"]) ?: run {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 return@get
@@ -49,6 +102,7 @@ fun Route.usuarioRoutes(service: UsuarioService) {
 
         // POST /api/v1/usuarios
         post {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.CRIAR))) return@post
             val dto = try {
                 call.receive<CriarUsuarioDto>()
             } catch (e: Exception) {
@@ -65,6 +119,7 @@ fun Route.usuarioRoutes(service: UsuarioService) {
 
         // PUT /api/v1/usuarios/:id
         put("{id}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.EDITAR))) return@put
             val id = parseUUID(call.parameters["id"]) ?: run {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 return@put
@@ -86,6 +141,7 @@ fun Route.usuarioRoutes(service: UsuarioService) {
 
         // PATCH /api/v1/usuarios/:id/ativar
         patch("{id}/ativar") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.EDITAR))) return@patch
             val id = parseUUID(call.parameters["id"]) ?: run {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 return@patch
@@ -105,6 +161,7 @@ fun Route.usuarioRoutes(service: UsuarioService) {
 
         // PATCH /api/v1/usuarios/:id/desativar
         patch("{id}/desativar") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.EDITAR))) return@patch
             val id = parseUUID(call.parameters["id"]) ?: run {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 return@patch

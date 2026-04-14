@@ -78,7 +78,48 @@ export interface RelatorioEstoqueLinha {
 export interface RelatorioEstoqueResponse {
   geradoEm: string
   totalProdutos: number
+  totalM3Madeira: string
+  totalMetrosLineares: string
   linhas: RelatorioEstoqueLinha[]
+}
+
+// ── Relatório de Volume Vendido ───────────────────────────────────────────────
+
+export interface VolumeVendidoLinha {
+  produtoCodigo: string
+  produtoDescricao: string
+  totalM3: string
+  totalMetrosLineares: string
+  totalFaturamento: string
+  quantidadeVendas: number
+}
+
+export interface VolumeVendidoResponse {
+  dataInicio: string
+  dataFim: string
+  totalM3: string
+  totalMetrosLineares: string
+  totalFaturamento: string
+  linhas: VolumeVendidoLinha[]
+}
+
+// ── Relatório de Vendas por Vendedor ─────────────────────────────────────────
+
+export interface VendasPorVendedorLinha {
+  vendedorNome: string
+  totalVendas: number
+  totalFaturamento: string
+  ticketMedio: string
+  totalM3: string
+  totalMetrosLineares: string
+}
+
+export interface VendasPorVendedorResponse {
+  dataInicio: string
+  dataFim: string
+  totalFaturamento: string
+  totalVendas: number
+  linhas: VendasPorVendedorLinha[]
 }
 
 // ── Relatório de Fluxo de Caixa ───────────────────────────────────────────────
@@ -219,5 +260,15 @@ export const relatoriosApi = {
   margemPeriodo: (dataInicio: string, dataFim: string) =>
     api
       .get<RelatorioMargemPeriodoResponse>('/relatorios/margem-periodo', { params: { dataInicio, dataFim } })
+      .then((r) => r.data),
+
+  volumeVendido: (dataInicio: string, dataFim: string) =>
+    api
+      .get<VolumeVendidoResponse>('/relatorios/volume-vendido', { params: { dataInicio, dataFim } })
+      .then((r) => r.data),
+
+  vendasPorVendedor: (dataInicio: string, dataFim: string) =>
+    api
+      .get<VendasPorVendedorResponse>('/relatorios/vendas-por-vendedor', { params: { dataInicio, dataFim } })
       .then((r) => r.data),
 }

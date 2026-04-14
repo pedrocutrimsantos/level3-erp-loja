@@ -40,7 +40,7 @@ class SefazDirectAdapter(
     private val senha: CharArray,
 ) : NfEmissaoPort {
 
-    private val soapClient by lazy { SefazSoapClient(keyStore, senha) }
+    private val soapClient by lazy { SefazSoapClient(keyStore, senha, config.ambiente) }
     private val urls       by lazy { SefazUrlRouter.resolver(config.uf, config.ambiente) }
     private val cuf        get() = SefazUrlRouter.UF_CODIGO[config.uf.uppercase()] ?: "35"
 
@@ -133,7 +133,12 @@ class SefazDirectAdapter(
 
     // ── Cancelamento ─────────────────────────────────────────────────────────
 
-    override suspend fun cancelar(vendaId: UUID, chaveAcesso: String, justificativa: String): NfCancelamentoResult {
+    override suspend fun cancelar(
+        vendaId: UUID,
+        chaveAcesso: String,
+        justificativa: String,
+        nProt: String,
+    ): NfCancelamentoResult {
         log.info { "SefazDirect: cancelando chave=${chaveAcesso.take(8)}… justificativa=${justificativa.take(30)}" }
 
         return runCatching {
@@ -142,6 +147,7 @@ class SefazDirectAdapter(
                 chaveAcesso   = chaveAcesso,
                 cnpjEmitente  = config.cnpj,
                 justificativa = justificativa,
+                nProt         = nProt,
                 ambiente      = config.ambiente,
             )
 
@@ -175,20 +181,13 @@ class SefazDirectAdapter(
         }
     }
 
-    // ── Consulta de status ───────────────────────────────────────────────────
-
-    override suspend fun consultarStatus(vendaId: UUID): NfEmissaoResult? {
-        // Não temos a chave aqui — consultarStatus recebe só vendaId.
-        // NfeService chamará com chaveAcesso separado via consultarPorChave quando necessário.
-        // Retornar null indica que o reprocessamento deve buscar a chave no banco antes.
-        return null
-    }
+    // ── Consulta de status por chave ─────────────────────────────────────────
 
     /**
-     * Consulta status de uma NF-e por chave de acesso.
-     * Usada internamente pelo reprocessamento de NF AGUARDANDO.
+     * Consulta status de uma NF-e por chave de acesso (44 dígitos) via NFeConsultaProtocolo4.
+     * Implementa [NfEmissaoPort.consultarPorChave] — usado pelo reprocessamento de AGUARDANDO.
      */
-    suspend fun consultarPorChave(chaveAcesso: String): NfEmissaoResult? {
+    override suspend fun consultarPorChave(chaveAcesso: String): NfEmissaoResult? {
         return runCatching {
             val soapResp = soapClient.consultarProtocolo(
                 url          = urls.consultaProtocolo,

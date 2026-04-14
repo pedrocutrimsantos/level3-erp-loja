@@ -37,6 +37,19 @@ export interface AtualizarUsuarioDto {
   telefone?: string
 }
 
+export interface AtualizarPerfilDto {
+  nome?: string
+  telefone?: string
+}
+
+export const meApi = {
+  buscar: () =>
+    api.get<UsuarioResponse>('/me').then((r) => r.data),
+
+  atualizar: (dto: AtualizarPerfilDto) =>
+    api.put<UsuarioResponse>('/me', dto).then((r) => r.data),
+}
+
 export const usuariosApi = {
   listar: () =>
     api.get<UsuarioResponse[]>('/usuarios').then((r) => r.data),

@@ -24,10 +24,14 @@ object NFeEventoBuilder {
      * @param nSeqEvento     número sequencial do evento (1 para 1º cancelamento)
      * @param ambiente       "PRODUCAO" ou "HOMOLOGACAO"
      */
+    /**
+     * @param nProt  protocolo de autorização da NF-e original (obrigatório na SEFAZ; passa vazio em testes unitários)
+     */
     fun cancelamento(
         chaveAcesso: String,
         cnpjEmitente: String,
         justificativa: String,
+        nProt: String = "",
         nSeqEvento: Int = 1,
         ambiente: String = "HOMOLOGACAO",
     ): String {
@@ -40,6 +44,6 @@ object NFeEventoBuilder {
         val dhEvento = ZonedDateTime.now(SP_ZONE).format(DATETIME_FMT)
         val eventoId = "ID110111${chaveAcesso}${nSeqEvento.toString().padStart(2, '0')}"
 
-        return """<envEvento versao="1.00" xmlns="http://www.portalfiscal.inf.br/nfe"><idLote>1</idLote><evento versao="1.00"><infEvento Id="$eventoId"><cOrgao>${chaveAcesso.substring(0, 2)}</cOrgao><tpAmb>$tpAmb</tpAmb><CNPJ>${cnpjEmitente.filter { it.isDigit() }}</CNPJ><chNFe>$chaveAcesso</chNFe><dhEvento>$dhEvento</dhEvento><tpEvento>110111</tpEvento><nSeqEvento>$nSeqEvento</nSeqEvento><verEvento>1.00</verEvento><detEvento versao="1.00"><descEvento>Cancelamento</descEvento><nProt></nProt><xJust>${NFeXmlBuilder.xmlEscape(justificativa)}</xJust></detEvento></infEvento></evento></envEvento>"""
+        return """<envEvento versao="1.00" xmlns="http://www.portalfiscal.inf.br/nfe"><idLote>1</idLote><evento versao="1.00"><infEvento Id="$eventoId"><cOrgao>${chaveAcesso.substring(0, 2)}</cOrgao><tpAmb>$tpAmb</tpAmb><CNPJ>${cnpjEmitente.filter { it.isDigit() }}</CNPJ><chNFe>$chaveAcesso</chNFe><dhEvento>$dhEvento</dhEvento><tpEvento>110111</tpEvento><nSeqEvento>$nSeqEvento</nSeqEvento><verEvento>1.00</verEvento><detEvento versao="1.00"><descEvento>Cancelamento</descEvento><nProt>$nProt</nProt><xJust>${NFeXmlBuilder.xmlEscape(justificativa)}</xJust></detEvento></infEvento></evento></envEvento>"""
     }
 }

@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.venda.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
 import br.com.madeireira.modules.venda.api.dto.VendaBalcaoRequest
 import br.com.madeireira.modules.venda.application.VendaService
@@ -17,13 +19,14 @@ import java.util.UUID
 fun Route.vendaRoutes(service: VendaService) {
     route("/api/v1/vendas") {
             get {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 50
                 val vendas = service.listarVendas(limit)
                 call.respond(HttpStatusCode.OK, vendas)
             }
 
-            // GET /api/v1/vendas/{id}
             get("{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                     return@get
@@ -36,6 +39,7 @@ fun Route.vendaRoutes(service: VendaService) {
             }
 
             post("balcao") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.CRIAR))) return@post
                 val req = try {
                     call.receive<VendaBalcaoRequest>()
                 } catch (e: Exception) {
@@ -54,14 +58,14 @@ fun Route.vendaRoutes(service: VendaService) {
                 }
             }
 
-            // GET  /api/v1/vendas/orcamentos
             get("orcamentos") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 100
                 call.respond(HttpStatusCode.OK, service.listarOrcamentos(limit))
             }
 
-            // POST /api/v1/vendas/orcamentos
             post("orcamentos") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.CRIAR))) return@post
                 val req = try {
                     call.receive<VendaBalcaoRequest>()
                 } catch (e: Exception) {
@@ -80,8 +84,8 @@ fun Route.vendaRoutes(service: VendaService) {
                 }
             }
 
-            // POST /api/v1/vendas/orcamentos/{id}/confirmar
             post("orcamentos/{id}/confirmar") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.APROVAR))) return@post
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                     return@post
@@ -98,8 +102,8 @@ fun Route.vendaRoutes(service: VendaService) {
                 }
             }
 
-            // DELETE /api/v1/vendas/orcamentos/{id}
             delete("orcamentos/{id}") {
+                if (!call.requerPermissao(Permissions.VEN_CANCELAR)) return@delete
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() } ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                     return@delete

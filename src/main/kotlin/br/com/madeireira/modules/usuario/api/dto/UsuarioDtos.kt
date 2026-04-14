@@ -42,3 +42,10 @@ data class PerfilResponse(
     val codigo: String,
     val descricao: String,
 )
+
+/** Atualização restrita ao próprio usuário — não permite trocar perfil ou e-mail. */
+@Serializable
+data class AtualizarPerfilDto(
+    val nome: String? = null,
+    val telefone: String? = null,
+)

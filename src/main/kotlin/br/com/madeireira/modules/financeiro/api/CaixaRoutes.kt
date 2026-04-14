@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.financeiro.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.venda.application.VendaService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -12,6 +14,7 @@ import java.time.LocalDate
 fun Route.caixaRoutes(vendaService: VendaService) {
     route("/api/v1/financeiro/caixa") {
             get {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.VISUALIZAR))) return@get
                 val dataParam = call.request.queryParameters["data"]
                 val data = if (dataParam != null) {
                     runCatching { LocalDate.parse(dataParam) }.getOrElse {
@@ -21,9 +24,7 @@ fun Route.caixaRoutes(vendaService: VendaService) {
                 } else {
                     LocalDate.now()
                 }
-
-                val resultado = vendaService.resumoCaixa(data)
-                call.respond(resultado)
+                call.respond(vendaService.resumoCaixa(data))
             }
         }
 }

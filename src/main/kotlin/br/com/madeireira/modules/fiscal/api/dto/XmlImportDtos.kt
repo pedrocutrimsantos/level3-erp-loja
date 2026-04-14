@@ -32,6 +32,7 @@ data class NfeXmlConfirmarRequest(
     val chaveAcesso:  String?,
     val emitenteCnpj: String,
     val emitenteNome: String,
+    val fornecedorId: String? = null,
     val itens:        List<NfeXmlItemConfirmar>,
 )
 

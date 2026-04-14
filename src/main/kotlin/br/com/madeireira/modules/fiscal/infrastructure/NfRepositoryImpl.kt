@@ -7,6 +7,7 @@ import br.com.madeireira.modules.fiscal.domain.model.StatusNf
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -83,6 +84,25 @@ private object ProdutoT : Table("produto") {
 private object UnidadeMedidaT : Table("unidade_medida") {
     val id     = uuid("id")
     val codigo = varchar("codigo", 10)
+    override val primaryKey = PrimaryKey(id)
+}
+
+private object NfItemT : Table("nf_item") {
+    val id                     = uuid("id").autoGenerate()
+    val nfId                   = uuid("nf_id")
+    val itemVendaId            = uuid("item_venda_id").nullable()
+    val numeroItem             = integer("numero_item")
+    val codigoProduto          = varchar("codigo_produto", 30)
+    val descricao              = varchar("descricao", 120)
+    val ncm                    = varchar("ncm", 8)
+    val cfop                   = varchar("cfop", 5)
+    val unidadeComercial       = varchar("unidade_comercial", 6)
+    val quantidadeComercial    = decimal("quantidade_comercial", 14, 4)
+    val valorUnitarioComercial = decimal("valor_unitario_comercial", 14, 4)
+    val unidadeTributavel      = varchar("unidade_tributavel", 6)
+    val quantidadeTributavel   = decimal("quantidade_tributavel", 14, 4)
+    val valorUnitarioTributavel = decimal("valor_unitario_tributavel", 14, 4)
+    val valorTotal             = decimal("valor_total", 14, 2)
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -284,6 +304,27 @@ class NfRepositoryImpl : NfRepository {
             itens        = itens,
             totais       = totais,
         )
+    }
+
+    override suspend fun insertItens(itens: List<NfItemParaInserir>): Unit = dbQuery {
+        if (itens.isEmpty()) return@dbQuery
+        NfItemT.batchInsert(itens) { item ->
+            this[NfItemT.nfId]                    = item.nfId
+            this[NfItemT.itemVendaId]             = item.itemVendaId
+            this[NfItemT.numeroItem]              = item.numeroItem
+            this[NfItemT.codigoProduto]           = item.codigoProduto.take(30)
+            this[NfItemT.descricao]               = item.descricao.take(120)
+            this[NfItemT.ncm]                     = item.ncm.padStart(8, '0').take(8)
+            this[NfItemT.cfop]                    = item.cfop.take(5)
+            this[NfItemT.unidadeComercial]        = item.unidadeComercial.take(6)
+            this[NfItemT.quantidadeComercial]     = item.quantidadeComercial.setScale(4, RoundingMode.HALF_UP)
+            this[NfItemT.valorUnitarioComercial]  = item.valorUnitarioComercial.setScale(4, RoundingMode.HALF_UP)
+            // Unidade tributável = comercial (sem fator de conversão específico neste ponto)
+            this[NfItemT.unidadeTributavel]       = item.unidadeComercial.take(6)
+            this[NfItemT.quantidadeTributavel]    = item.quantidadeComercial.setScale(4, RoundingMode.HALF_UP)
+            this[NfItemT.valorUnitarioTributavel] = item.valorUnitarioComercial.setScale(4, RoundingMode.HALF_UP)
+            this[NfItemT.valorTotal]              = item.valorTotal.setScale(2, RoundingMode.HALF_UP)
+        }
     }
 
     private fun toNf(row: ResultRow) = NfEmitida(

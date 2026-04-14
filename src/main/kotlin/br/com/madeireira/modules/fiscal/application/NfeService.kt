@@ -10,6 +10,7 @@ import br.com.madeireira.modules.fiscal.domain.model.AmbienteNf
 import br.com.madeireira.modules.fiscal.domain.model.ModeloNf
 import br.com.madeireira.modules.fiscal.domain.model.NfEmitida
 import br.com.madeireira.modules.fiscal.domain.model.StatusNf
+import br.com.madeireira.modules.fiscal.infrastructure.NfItemParaInserir
 import br.com.madeireira.modules.fiscal.infrastructure.NfRepository
 import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazCertificadoLoader
 import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazDirectAdapter
@@ -17,6 +18,8 @@ import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazEmissorConfig
 import br.com.madeireira.modules.produto.infrastructure.ProdutoRepository
 import br.com.madeireira.modules.venda.application.VendaService
 import br.com.madeireira.modules.venda.infrastructure.VendaRepository
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.util.UUID
 
@@ -182,6 +185,28 @@ class NfeService(
         )
 
         val salva = nfRepo.insert(nf)
+
+        // Grava itens em nf_item — necessário para SPED EFD Bloco C e rastreabilidade fiscal
+        val cfop = empresa?.cfopPadrao?.takeIf { it.isNotBlank() } ?: "5102"
+        val itensParaInserir = itens.zip(nfItens).mapIndexed { idx, (itemVenda, nfItemData) ->
+            val qtd   = BigDecimal(nfItemData.quantidadeComercial)
+            val vUnit = BigDecimal(nfItemData.valorUnitario)
+            NfItemParaInserir(
+                nfId                   = salva.id,
+                itemVendaId            = itemVenda.id,
+                numeroItem             = idx + 1,
+                codigoProduto          = nfItemData.codigoProduto,
+                descricao              = nfItemData.descricao,
+                ncm                   = nfItemData.ncm,
+                cfop                  = cfop,
+                unidadeComercial       = nfItemData.unidadeComercial,
+                quantidadeComercial    = qtd,
+                valorUnitarioComercial = vUnit,
+                valorTotal             = (qtd * vUnit).setScale(2, RoundingMode.HALF_UP),
+            )
+        }
+        nfRepo.insertItens(itensParaInserir)
+
         return salva.toResponse(vendaNumero = venda.numero)
     }
 
@@ -201,7 +226,12 @@ class NfeService(
 
         val chave = requireNotNull(nf.chaveAcesso) { "NF sem chave de acesso" }
         val vendaIdCancel = requireNotNull(nf.vendaId) { "NF sem venda associada" }
-        val resultado = resolverEmissor().cancelar(vendaIdCancel, chave, justificativa)
+        val resultado = resolverEmissor().cancelar(
+            vendaId      = vendaIdCancel,
+            chaveAcesso  = chave,
+            justificativa = justificativa,
+            nProt        = nf.protocoloAutorizacao ?: "",
+        )
 
         val atualizada = nf.copy(
             statusSefaz           = resultado.status,
@@ -236,11 +266,22 @@ class NfeService(
         }
 
         val vendaId = requireNotNull(nf.vendaId) { "NF sem venda associada: $nfId" }
+        val chave   = nf.chaveAcesso
+
         val emissor = resolverEmissor()
-        val resultado = emissor.consultarStatus(vendaId)
+
+        // Usa consultarPorChave quando a chave está disponível (SefazDirectAdapter).
+        // Cai em consultarStatus (legado) se a chave ainda não foi gerada.
+        val resultado: NfEmissaoResult? = when {
+            !chave.isNullOrBlank() && chave.length == 44 -> {
+                log.info { "reprocessar: consultando NF $nfId por chave ${chave.take(8)}…" }
+                emissor.consultarPorChave(chave)
+            }
+            else -> emissor.consultarStatus(vendaId)
+        }
 
         if (resultado == null) {
-            log.info { "reprocessar: adapter não suporta consulta avulsa — NF $nfId permanece AGUARDANDO" }
+            log.info { "reprocessar: adapter não retornou status — NF $nfId permanece AGUARDANDO" }
             val venda = vendaRepo.findVendaById(vendaId)
             return nf.toResponse(vendaNumero = venda?.numero)
         }
@@ -287,7 +328,7 @@ class NfeService(
                         produtoId              = item.produtoId,
                         quantidade             = item.quantidade,
                         custoUnitario          = item.valorUnitario,
-                        fornecedorId           = null,
+                        fornecedorId           = req.fornecedorId,
                         dataVencimento         = null,
                         formaPagamentoPrevisto = null,
                         observacao             = item.observacao

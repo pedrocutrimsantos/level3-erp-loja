@@ -10,6 +10,8 @@ import {
 } from '@/shared/components/ui/Table'
 import { useOrcamentos, useConfirmarOrcamento, useCancelarOrcamento } from '../hooks/useVenda'
 import type { OrcamentoDetalheResponse } from '@/shared/api/vendas'
+import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
+import { Perms } from '@/shared/utils/permissions'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -165,6 +167,8 @@ function OrcamentoLinha({
   onCancelar: () => void
 }) {
   const [expandido, setExpandido] = useState(false)
+  const podeConfirmar = useTemPermissao(Perms.VEN_APROVAR)
+  const podeCancelar  = useTemPermissao(Perms.VEN_CANCELAR)
 
   return (
     <>
@@ -193,8 +197,8 @@ function OrcamentoLinha({
         </TableCell>
         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
           <div className="flex gap-1 justify-end">
-            <Button size="sm" onClick={onConfirmar}>Confirmar</Button>
-            <Button size="sm" variant="outline" onClick={onCancelar}>Cancelar</Button>
+            {podeConfirmar && <Button size="sm" onClick={onConfirmar}>Confirmar</Button>}
+            {podeCancelar  && <Button size="sm" variant="outline" onClick={onCancelar}>Cancelar</Button>}
           </div>
         </TableCell>
       </TableRow>

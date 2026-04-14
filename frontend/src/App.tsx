@@ -34,6 +34,7 @@ const DashboardPage       = React.lazy(() => import('@/modules/relatorio/pages/D
 const RelatoriosExportPage = React.lazy(() => import('@/modules/relatorio/pages/RelatoriosExportPage'))
 const NfePage             = React.lazy(() => import('@/modules/fiscal/pages/NfePage'))
 const DanfePage           = React.lazy(() => import('@/modules/fiscal/pages/DanfePage'))
+const SpedPage            = React.lazy(() => import('@/modules/fiscal/pages/SpedPage'))
 const FornecedoresPage    = React.lazy(() => import('@/modules/fornecedor/pages/FornecedoresPage'))
 const EntregasPage        = React.lazy(() => import('@/modules/entrega/pages/EntregasPage'))
 const PrecosPage          = React.lazy(() => import('@/modules/produto/pages/PrecosPage'))
@@ -43,6 +44,8 @@ const CobrancaPage        = React.lazy(() => import('@/modules/financeiro/pages/
 const PromocaoPage        = React.lazy(() => import('@/modules/promocao/pages/PromocaoPage'))
 const DrePage             = React.lazy(() => import('@/modules/relatorio/pages/DrePage'))
 const MargemPeriodoPage   = React.lazy(() => import('@/modules/relatorio/pages/MargemPeriodoPage'))
+const MetaVendasPage      = React.lazy(() => import('@/modules/meta/pages/MetaVendasPage'))
+const MeuPerfilPage       = React.lazy(() => import('@/modules/perfil/pages/MeuPerfilPage'))
 
 function PageFallback() {
   return (
@@ -104,6 +107,7 @@ export default function App() {
                       <Route path="/relatorios/exportar"    element={<RelatoriosExportPage />} />
                       <Route path="/relatorios/dre"            element={<DrePage />} />
                       <Route path="/relatorios/margem-periodo" element={<MargemPeriodoPage />} />
+                      <Route path="/relatorios/metas"          element={<MetaVendasPage />} />
                       <Route path="/produtos"               element={<ProdutoListPage />} />
                       <Route path="/produtos/precos"        element={<PrecosPage />} />
                       <Route path="/produtos/novo"          element={<ProdutoFormPage />} />
@@ -120,6 +124,7 @@ export default function App() {
                       <Route path="/clientes/:id"           element={<ClienteDetalhePage />} />
                       <Route path="/compras/pedidos"        element={<ComprasPage />} />
                       <Route path="/fiscal/nfe"             element={<NfePage />} />
+                      <Route path="/fiscal/sped"            element={<SpedPage />} />
                       <Route path="/fornecedores"           element={<FornecedoresPage />} />
                       <Route path="/entregas"               element={<EntregasPage />} />
                       <Route path="/financeiro/caixa"         element={<CaixaPage />} />
@@ -131,6 +136,7 @@ export default function App() {
                       <Route path="/vendas/promocoes"         element={<PromocaoPage />} />
                       <Route path="/configuracoes/empresa"  element={<EmpresaPage />} />
                       <Route path="/configuracoes/usuarios" element={<UsuariosPage />} />
+                      <Route path="/perfil"                 element={<MeuPerfilPage />} />
                     </Routes>
                   </Suspense>
                 </AppLayout>

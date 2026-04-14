@@ -8,6 +8,12 @@ import br.com.madeireira.modules.devolucao.infrastructure.DevolucaoRepository
 import br.com.madeireira.modules.devolucao.infrastructure.DevolucaoListRow
 import br.com.madeireira.modules.estoque.domain.model.MovimentacaoEstoque
 import br.com.madeireira.modules.estoque.infrastructure.EstoqueRepository
+import br.com.madeireira.modules.financeiro.domain.model.ParcelaFinanceira
+import br.com.madeireira.modules.financeiro.domain.model.StatusParcela
+import br.com.madeireira.modules.financeiro.domain.model.StatusTitulo
+import br.com.madeireira.modules.financeiro.domain.model.TipoTitulo
+import br.com.madeireira.modules.financeiro.domain.model.TituloFinanceiro
+import br.com.madeireira.modules.financeiro.infrastructure.TituloRepository
 import br.com.madeireira.modules.produto.domain.model.TipoProduto
 import br.com.madeireira.modules.produto.infrastructure.ProdutoRepository
 import br.com.madeireira.modules.venda.domain.model.StatusVenda
@@ -15,6 +21,7 @@ import br.com.madeireira.modules.venda.infrastructure.VendaRepository
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 private val DEPOSITO_PADRAO = UUID.fromString("00000000-0000-0000-0000-000000000030")
@@ -24,6 +31,7 @@ class DevolucaoService(
     private val vendaRepo: VendaRepository,
     private val estoqueRepo: EstoqueRepository,
     private val produtoRepo: ProdutoRepository,
+    private val tituloRepo: TituloRepository,
 ) {
     /** Lista todas as devoluções com número da venda e cliente. */
     suspend fun listarTodas(limit: Int = 200): List<DevolucaoListItemResponse> =
@@ -230,6 +238,39 @@ class DevolucaoService(
         val qtdItensDevolvidos = req.itens.size
         val novoStatus = if (qtdItensDevolvidos >= todosItens.size) StatusVenda.DEVOLVIDO else StatusVenda.DEVOLVIDO_PARCIAL
         vendaRepo.updateStatus(vendaId, novoStatus)
+
+        // Gera título a receber (crédito ao cliente)
+        val tituloId = UUID.randomUUID()
+        val titulo = TituloFinanceiro(
+            id            = tituloId,
+            numero        = "CRED-${numero.removePrefix("DEV-")}",
+            descricao     = "Crédito devolução $numero — venda ${venda.numero}",
+            tipo          = TipoTitulo.RECEBER,
+            vendaId       = vendaId,
+            compraId      = null,
+            clienteId     = venda.clienteId,
+            fornecedorId  = null,
+            categoria     = "DEVOLUCAO",
+            valorOriginal = valorTotalDev,
+            valorPago     = BigDecimal.ZERO,
+            status        = StatusTitulo.ABERTO,
+            dataEmissao   = LocalDate.now(),
+            createdAt     = now,
+        )
+        tituloRepo.criar(titulo)
+        tituloRepo.criarParcela(
+            ParcelaFinanceira(
+                id             = UUID.randomUUID(),
+                tituloId       = tituloId,
+                numeroParcela  = 1,
+                valor          = valorTotalDev,
+                dataVencimento = LocalDate.now(),
+                dataPagamento  = null,
+                valorPago      = null,
+                formaPagamento = null,
+                status         = StatusParcela.ABERTO,
+            )
+        )
 
         return DevolucaoResponse(
             id          = devolucaoId.toString(),

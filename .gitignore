@@ -38,3 +38,4 @@ bin/
 ### Secrets ###
 .env
 .env.local
+!.env.example

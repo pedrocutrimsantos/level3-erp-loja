@@ -10,9 +10,6 @@ import java.security.SecureRandom
 import java.time.Duration
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
-import java.security.cert.X509Certificate
 
 private val log = KotlinLogging.logger {}
 
@@ -31,6 +28,7 @@ private val log = KotlinLogging.logger {}
 class SefazSoapClient(
     private val keyStore: KeyStore,
     private val senha: CharArray,
+    private val ambiente: String = "HOMOLOGACAO",
 ) {
 
     private val httpClient: HttpClient by lazy { buildHttpClient() }
@@ -113,7 +111,9 @@ class SefazSoapClient(
         </soap12:Envelope>
     """.trimIndent()
 
-    private fun buildConsultaEnvelope(cuf: String, chaveAcesso: String): String = """
+    private fun buildConsultaEnvelope(cuf: String, chaveAcesso: String): String {
+        val tpAmb = if (ambiente.uppercase() == "PRODUCAO") "1" else "2"
+        return """
         <soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope"
                          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                          xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -126,7 +126,7 @@ class SefazSoapClient(
           <soap12:Body>
             <nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4">
               <consSitNFe versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
-                <tpAmb>1</tpAmb>
+                <tpAmb>$tpAmb</tpAmb>
                 <xServ>CONSULTAR</xServ>
                 <chNFe>$chaveAcesso</chNFe>
               </consSitNFe>
@@ -134,6 +134,7 @@ class SefazSoapClient(
           </soap12:Body>
         </soap12:Envelope>
     """.trimIndent()
+    }
 
     // ── HTTP ─────────────────────────────────────────────────────────────────
 
@@ -162,16 +163,12 @@ class SefazSoapClient(
         val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
         kmf.init(keyStore, senha)
 
-        // Trust-all para ICP-Brasil (CAs de governo não estão no cacerts padrão da JVM)
-        // TODO: carregar cadeia ICP-Brasil real em versão futura
-        val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-        })
+        // Carrega cadeia ICP-Brasil (CAs raiz da SEFAZ não estão no cacerts padrão da JVM).
+        // Em produção configure ICP_BRASIL_TRUSTSTORE_PATH. Ver IcpBrasilTrustManager.kt.
+        val trustManagers = IcpBrasilTrustManager.carregar(ambiente)
 
         val sslCtx = SSLContext.getInstance("TLS")
-        sslCtx.init(kmf.keyManagers, trustAll, SecureRandom())
+        sslCtx.init(kmf.keyManagers, trustManagers, SecureRandom())
 
         return HttpClient.newBuilder()
             .sslContext(sslCtx)

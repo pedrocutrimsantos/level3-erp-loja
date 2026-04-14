@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.entrega.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.entrega.api.dto.CriarEntregaRequest
 import br.com.madeireira.modules.entrega.api.dto.ConfirmarEntregaRequest
 import br.com.madeireira.modules.entrega.application.EntregaService
@@ -13,8 +15,8 @@ import java.util.UUID
 
 fun Route.entregaRoutes(service: EntregaService) {
     route("/api/v1") {
-            // Cria romaneio de entrega a partir de uma venda confirmada
             post("/vendas/{id}/entrega") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_ENT, Permissions.CRIAR))) return@post
                 val vendaId = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: return@post call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 val req = try {
@@ -31,13 +33,13 @@ fun Route.entregaRoutes(service: EntregaService) {
                 }
             }
 
-            // Lista todas as entregas
             get("/entregas") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_ENT, Permissions.VISUALIZAR))) return@get
                 call.respond(service.listar())
             }
 
-            // Detalhe de uma entrega com seus itens
             get("/entregas/{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_ENT, Permissions.VISUALIZAR))) return@get
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: return@get call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 try {
@@ -47,8 +49,8 @@ fun Route.entregaRoutes(service: EntregaService) {
                 }
             }
 
-            // Confirma entrega — informa os itens efetivamente entregues
             post("/entregas/{id}/confirmar") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_ENT, Permissions.EDITAR))) return@post
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: return@post call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 val req = try {
@@ -65,8 +67,8 @@ fun Route.entregaRoutes(service: EntregaService) {
                 }
             }
 
-            // Cancela uma entrega pendente
             post("/entregas/{id}/cancelar") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_ENT, Permissions.EDITAR))) return@post
                 val id = call.parameters["id"]?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                     ?: return@post call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                 try {

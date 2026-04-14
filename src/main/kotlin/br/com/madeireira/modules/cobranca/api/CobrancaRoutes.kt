@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.cobranca.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.cobranca.api.dto.CobrancaLogDto
 import br.com.madeireira.modules.cobranca.api.dto.ParcelaPendenteDto
 import br.com.madeireira.modules.cobranca.api.dto.ResultadoDisparoDto
@@ -20,12 +22,14 @@ fun Route.cobrancaRoutes(service: CobrancaService) {
 
         /** Lista parcelas elegíveis para cobrança hoje */
         get("/pendentes") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.VISUALIZAR))) return@get
             val pendentes = service.findPendentes()
             call.respond(pendentes.map { it.toDto() })
         }
 
         /** Dispara régua completa (todas as parcelas do dia) */
         post("/disparar-lote") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.EDITAR))) return@post
             val resultado = service.dispararLote()
             call.respond(
                 ResultadoDisparoDto(
@@ -39,6 +43,7 @@ fun Route.cobrancaRoutes(service: CobrancaService) {
 
         /** Dispara cobrança manual para uma parcela específica */
         post("/disparar/{parcelaId}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.EDITAR))) return@post
             val parcelaId = call.parameters["parcelaId"]
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "parcelaId inválido"))
@@ -56,12 +61,14 @@ fun Route.cobrancaRoutes(service: CobrancaService) {
 
         /** Histórico geral de cobranças */
         get("/historico") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.VISUALIZAR))) return@get
             val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 100
             call.respond(service.findHistorico(limit).map { it.toDto() })
         }
 
         /** Histórico de cobranças de uma parcela */
         get("/historico/{parcelaId}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.VISUALIZAR))) return@get
             val parcelaId = call.parameters["parcelaId"]
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "parcelaId inválido"))

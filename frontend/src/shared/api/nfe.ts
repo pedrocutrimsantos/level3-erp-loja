@@ -103,6 +103,7 @@ export const nfeApi = {
     chaveAcesso: string | null
     emitenteCnpj: string
     emitenteNome: string
+    fornecedorId?: string | null
     itens: NfeXmlItemConfirmar[]
   }) => api.post<NfeXmlImportarResponse>('/fiscal/nfe/xml/importar', payload).then((r) => r.data),
 }

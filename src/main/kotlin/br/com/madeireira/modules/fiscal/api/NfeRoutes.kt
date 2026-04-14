@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.fiscal.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.fiscal.api.dto.CancelarNfRequest
 import br.com.madeireira.modules.fiscal.api.dto.EmitirNfRequest
 import br.com.madeireira.modules.fiscal.api.dto.NfeXmlConfirmarRequest
@@ -19,14 +21,17 @@ fun Route.nfeRoutes(nfeService: NfeService) {
     route("/api/v1/fiscal/nfe") {
 
         get {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIS, Permissions.VISUALIZAR))) return@get
             call.respond(nfeService.listar())
         }
 
         get("/pendentes") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIS, Permissions.VISUALIZAR))) return@get
             call.respond(nfeService.listarPendentes())
         }
 
         post("/emitir") {
+            if (!call.requerPermissao(Permissions.FIS_EMITIR_NF)) return@post
             val req = call.receive<EmitirNfRequest>()
             val vendaId = runCatching { UUID.fromString(req.vendaId) }.getOrElse {
                 call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "vendaId inválido"))
@@ -36,6 +41,7 @@ fun Route.nfeRoutes(nfeService: NfeService) {
         }
 
         post("/{id}/cancelar") {
+            if (!call.requerPermissao(Permissions.VEN_CANCELAR_NF)) return@post
             val id = runCatching { UUID.fromString(call.parameters["id"]) }.getOrElse {
                 call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "id inválido"))
                 return@post
@@ -44,10 +50,8 @@ fun Route.nfeRoutes(nfeService: NfeService) {
             call.respond(nfeService.cancelar(id, req.justificativa))
         }
 
-        // ── Reprocessamento de NF AGUARDANDO ─────────────────────────────────
-        // Re-consulta o status na SEFAZ para NF-e que ficaram
-        // travadas em AGUARDANDO por timeout no polling da emissão original.
         post("/{id}/reprocessar") {
+            if (!call.requerPermissao(Permissions.FIS_EMITIR_NF)) return@post
             val id = runCatching { UUID.fromString(call.parameters["id"]) }.getOrElse {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("id inválido"))
                 return@post
@@ -61,9 +65,8 @@ fun Route.nfeRoutes(nfeService: NfeService) {
             }
         }
 
-        // ── DANFE ─────────────────────────────────────────────────────────────
-
         get("/{id}/danfe") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIS, Permissions.VISUALIZAR))) return@get
             val id = runCatching { UUID.fromString(call.parameters["id"]) }.getOrElse {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("id inválido"))
                 return@get
@@ -75,10 +78,8 @@ fun Route.nfeRoutes(nfeService: NfeService) {
             }
         }
 
-        // ── Importação de XML ─────────────────────────────────────────────────
-
-        // POST /api/v1/fiscal/nfe/xml/preview — raw body application/xml ou text/xml
         post("/xml/preview") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIS, Permissions.VISUALIZAR))) return@post
             val xmlBytes = call.receive<ByteArray>()
             if (xmlBytes.isEmpty()) {
                 call.respond(HttpStatusCode.BadRequest, ErroResponse("Body XML vazio"))
@@ -87,15 +88,12 @@ fun Route.nfeRoutes(nfeService: NfeService) {
             try {
                 call.respond(nfeService.previewXml(xmlBytes))
             } catch (e: Exception) {
-                call.respond(
-                    HttpStatusCode.UnprocessableEntity,
-                    ErroResponse("Erro ao processar XML", e.message)
-                )
+                call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro ao processar XML", e.message))
             }
         }
 
-        // POST /api/v1/fiscal/nfe/xml/importar — confirma e lança entradas no estoque
         post("/xml/importar") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_COM, Permissions.CRIAR))) return@post
             val req = call.receive<NfeXmlConfirmarRequest>()
             try {
                 call.respond(nfeService.importarXml(req))

@@ -25,6 +25,12 @@ import br.com.madeireira.modules.relatorio.api.dto.RelatorioMargemResponse
 import br.com.madeireira.modules.relatorio.api.dto.EstoqueCriticoItem
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioEstoqueLinha
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioEstoqueResponse
+import br.com.madeireira.modules.relatorio.api.dto.VolumeVendidoLinha
+import br.com.madeireira.modules.relatorio.api.dto.VolumeVendidoResponse
+import br.com.madeireira.modules.relatorio.api.dto.VendasPorVendedorLinha
+import br.com.madeireira.modules.relatorio.api.dto.VendasPorVendedorResponse
+import br.com.madeireira.modules.relatorio.api.dto.NotificacaoItem
+import br.com.madeireira.modules.relatorio.api.dto.NotificacoesResponse
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioFluxoCaixaResponse
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioFluxoLinha
 import br.com.madeireira.modules.relatorio.api.dto.RelatorioVendaLinha
@@ -41,6 +47,12 @@ import java.math.RoundingMode
 import java.util.UUID
 import java.time.LocalDate
 import java.time.ZoneOffset
+
+// Referência local à tabela usuario — evita dependência cruzada de módulo
+private object UsuarioTableRef : Table("usuario") {
+    val id   = uuid("id")
+    val nome = varchar("nome", 120)
+}
 
 private val DEPOSITO_PADRAO = UUID.fromString("00000000-0000-0000-0000-000000000030")
 
@@ -179,10 +191,204 @@ class RelatorioService {
             )
         }.sortedWith(compareBy({ it.tipo }, { it.descricao }))
 
+        val totalM3 = linhas
+            .mapNotNull { it.saldoM3?.let { v -> BigDecimal(v) } }
+            .fold(BigDecimal.ZERO, BigDecimal::add)
+
+        val totalML = linhas
+            .mapNotNull { it.saldoMetroLinear?.let { v -> BigDecimal(v) } }
+            .fold(BigDecimal.ZERO, BigDecimal::add)
+
         RelatorioEstoqueResponse(
-            geradoEm      = LocalDate.now().toString(),
-            totalProdutos = linhas.size,
-            linhas        = linhas,
+            geradoEm            = LocalDate.now().toString(),
+            totalProdutos       = linhas.size,
+            totalM3Madeira      = totalM3.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            totalMetrosLineares = totalML.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            linhas              = linhas,
+        )
+    }
+
+    suspend fun volumeVendido(dataInicio: LocalDate, dataFim: LocalDate): VolumeVendidoResponse = dbQuery {
+        val brt    = ZoneOffset.ofHours(-3)
+        val inicio = dataInicio.atStartOfDay(brt).toInstant()
+        val fim    = dataFim.plusDays(1).atStartOfDay(brt).toInstant()
+
+        val vendaIds = VendaTable
+            .select {
+                (VendaTable.status inList listOf(
+                    StatusVenda.CONFIRMADO,
+                    StatusVenda.EM_ENTREGA,
+                    StatusVenda.ENTREGUE_PARCIAL,
+                    StatusVenda.CONCLUIDO,
+                )) and
+                (VendaTable.createdAt greaterEq inicio.toKotlin()) and
+                (VendaTable.createdAt less fim.toKotlin())
+            }
+            .map { it[VendaTable.id] }
+
+        if (vendaIds.isEmpty()) {
+            return@dbQuery VolumeVendidoResponse(
+                dataInicio          = dataInicio.toString(),
+                dataFim             = dataFim.toString(),
+                totalM3             = "0.0000",
+                totalMetrosLineares = "0.00",
+                totalFaturamento    = "0.00",
+                linhas              = emptyList(),
+            )
+        }
+
+        data class ProdutoAgg(
+            var totalM3: BigDecimal = BigDecimal.ZERO,
+            var totalML: BigDecimal = BigDecimal.ZERO,
+            var totalFat: BigDecimal = BigDecimal.ZERO,
+            var qtdVendas: Int = 0,
+            var codigo: String = "",
+            var descricao: String = "",
+        )
+
+        val agrupado = mutableMapOf<UUID, ProdutoAgg>()
+
+        ItemVendaTable
+            .join(ProdutoTable, JoinType.INNER, ItemVendaTable.produtoId, ProdutoTable.id)
+            .select {
+                (ItemVendaTable.vendaId inList vendaIds) and
+                (ItemVendaTable.tipoProduto eq TipoProduto.MADEIRA)
+            }
+            .forEach { row ->
+                val prodId = row[ProdutoTable.id]
+                val agg = agrupado.getOrPut(prodId) {
+                    ProdutoAgg(
+                        codigo    = row[ProdutoTable.codigo],
+                        descricao = row[ProdutoTable.descricao],
+                    )
+                }
+                agg.totalM3  = agg.totalM3.add(row[ItemVendaTable.volumeM3Calculado] ?: BigDecimal.ZERO)
+                agg.totalML  = agg.totalML.add(row[ItemVendaTable.quantidadeMLinear] ?: BigDecimal.ZERO)
+                agg.totalFat = agg.totalFat.add(row[ItemVendaTable.valorTotalItem])
+                agg.qtdVendas++
+            }
+
+        val linhas = agrupado.values
+            .sortedByDescending { it.totalM3 }
+            .map { agg ->
+                VolumeVendidoLinha(
+                    produtoCodigo       = agg.codigo,
+                    produtoDescricao    = agg.descricao,
+                    totalM3             = agg.totalM3.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+                    totalMetrosLineares = agg.totalML.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    totalFaturamento    = agg.totalFat.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    quantidadeVendas    = agg.qtdVendas,
+                )
+            }
+
+        val grandM3  = linhas.fold(BigDecimal.ZERO) { acc, l -> acc.add(BigDecimal(l.totalM3)) }
+        val grandML  = linhas.fold(BigDecimal.ZERO) { acc, l -> acc.add(BigDecimal(l.totalMetrosLineares)) }
+        val grandFat = linhas.fold(BigDecimal.ZERO) { acc, l -> acc.add(BigDecimal(l.totalFaturamento)) }
+
+        VolumeVendidoResponse(
+            dataInicio          = dataInicio.toString(),
+            dataFim             = dataFim.toString(),
+            totalM3             = grandM3.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            totalMetrosLineares = grandML.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            totalFaturamento    = grandFat.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            linhas              = linhas,
+        )
+    }
+
+    suspend fun vendasPorVendedor(dataInicio: LocalDate, dataFim: LocalDate): VendasPorVendedorResponse = dbQuery {
+        val brt    = ZoneOffset.ofHours(-3)
+        val inicio = dataInicio.atStartOfDay(brt).toInstant()
+        val fim    = dataFim.plusDays(1).atStartOfDay(brt).toInstant()
+
+        val vendasRows = VendaTable
+            .select {
+                (VendaTable.status inList listOf(
+                    StatusVenda.CONFIRMADO,
+                    StatusVenda.EM_ENTREGA,
+                    StatusVenda.ENTREGUE_PARCIAL,
+                    StatusVenda.CONCLUIDO,
+                )) and
+                (VendaTable.createdAt greaterEq inicio.toKotlin()) and
+                (VendaTable.createdAt less fim.toKotlin())
+            }
+            .toList()
+
+        if (vendasRows.isEmpty()) {
+            return@dbQuery VendasPorVendedorResponse(
+                dataInicio       = dataInicio.toString(),
+                dataFim          = dataFim.toString(),
+                totalFaturamento = "0.00",
+                totalVendas      = 0,
+                linhas           = emptyList(),
+            )
+        }
+
+        // Nomes dos vendedores
+        val vendedorIds = vendasRows.map { it[VendaTable.vendedorId] }.toSet()
+        val nomes = UsuarioTableRef
+            .select { UsuarioTableRef.id inList vendedorIds.toList() }
+            .associate { it[UsuarioTableRef.id] to it[UsuarioTableRef.nome] }
+
+        // Volumes m³ e metros lineares — somente itens MADEIRA
+        val vendaIds = vendasRows.map { it[VendaTable.id] }
+        data class VolumeAgg(var m3: BigDecimal = BigDecimal.ZERO, var ml: BigDecimal = BigDecimal.ZERO)
+        val volumePorVenda = mutableMapOf<UUID, VolumeAgg>()
+        ItemVendaTable
+            .select {
+                (ItemVendaTable.vendaId inList vendaIds) and
+                (ItemVendaTable.tipoProduto eq TipoProduto.MADEIRA)
+            }
+            .forEach { row ->
+                val agg = volumePorVenda.getOrPut(row[ItemVendaTable.vendaId]) { VolumeAgg() }
+                agg.m3 = agg.m3.add(row[ItemVendaTable.volumeM3Calculado] ?: BigDecimal.ZERO)
+                agg.ml = agg.ml.add(row[ItemVendaTable.quantidadeMLinear] ?: BigDecimal.ZERO)
+            }
+
+        // Agrupa por vendedor
+        data class VendedorAgg(
+            var totalVendas: Int = 0,
+            var totalFat: BigDecimal = BigDecimal.ZERO,
+            var totalM3: BigDecimal = BigDecimal.ZERO,
+            var totalML: BigDecimal = BigDecimal.ZERO,
+        )
+
+        val agrupado = mutableMapOf<UUID, VendedorAgg>()
+        vendasRows.forEach { row ->
+            val vId = row[VendaTable.vendedorId]
+            val agg = agrupado.getOrPut(vId) { VendedorAgg() }
+            agg.totalVendas++
+            agg.totalFat = agg.totalFat.add(row[VendaTable.valorTotal])
+            val vol = volumePorVenda[row[VendaTable.id]]
+            if (vol != null) {
+                agg.totalM3 = agg.totalM3.add(vol.m3)
+                agg.totalML = agg.totalML.add(vol.ml)
+            }
+        }
+
+        val linhas = agrupado.entries
+            .sortedByDescending { it.value.totalFat }
+            .map { (vId, agg) ->
+                val ticket = if (agg.totalVendas > 0)
+                    agg.totalFat.divide(BigDecimal(agg.totalVendas), 2, RoundingMode.HALF_UP)
+                else BigDecimal.ZERO
+                VendasPorVendedorLinha(
+                    vendedorNome        = nomes[vId] ?: "Desconhecido",
+                    totalVendas         = agg.totalVendas,
+                    totalFaturamento    = agg.totalFat.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                    ticketMedio         = ticket.toPlainString(),
+                    totalM3             = agg.totalM3.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+                    totalMetrosLineares = agg.totalML.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+                )
+            }
+
+        val grandFat = linhas.fold(BigDecimal.ZERO) { acc, l -> acc.add(BigDecimal(l.totalFaturamento)) }
+
+        VendasPorVendedorResponse(
+            dataInicio       = dataInicio.toString(),
+            dataFim          = dataFim.toString(),
+            totalFaturamento = grandFat.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+            totalVendas      = vendasRows.size,
+            linhas           = linhas,
         )
     }
 
@@ -703,6 +909,129 @@ class RelatorioService {
                 saldoMetroLinear = fator?.let { ConversionEngine.m3ParaLinear(saldoM3, it).toPlainString() },
             )
         }
+    }
+
+    suspend fun notificacoes(): NotificacoesResponse = dbQuery {
+        val hoje    = LocalDate.now()
+        val amanha2 = hoje.plusDays(2)
+        val limite30 = hoje.minusDays(30)
+        val brt = ZoneOffset.ofHours(-3)
+        val limite30Instant = limite30.atStartOfDay(brt).toInstant().toKotlin()
+
+        val itens = mutableListOf<NotificacaoItem>()
+
+        // 1. Títulos a receber vencidos
+        val recVencidos = TituloFinanceiroTable
+            .select {
+                (TituloFinanceiroTable.tipo eq TipoTitulo.RECEBER) and
+                (TituloFinanceiroTable.status eq StatusTitulo.VENCIDO)
+            }
+            .toList()
+        if (recVencidos.isNotEmpty()) {
+            val total = recVencidos.fold(BigDecimal.ZERO) { acc, r ->
+                acc.add(r[TituloFinanceiroTable.valorOriginal].subtract(r[TituloFinanceiroTable.valorPago]))
+            }
+            itens += NotificacaoItem(
+                tipo       = "TITULO_VENCIDO",
+                severidade = "CRITICA",
+                titulo     = "${recVencidos.size} título(s) a receber vencido(s)",
+                descricao  = "Total em aberto: R$ ${total.setScale(2, RoundingMode.HALF_UP).toPlainString()}",
+                quantidade = recVencidos.size,
+                valorTotal = total.toPlainString(),
+                link       = "/financeiro/contas-receber",
+            )
+        }
+
+        // 2. Contas a pagar vencidas
+        val pagVencidas = TituloFinanceiroTable
+            .select {
+                (TituloFinanceiroTable.tipo eq TipoTitulo.PAGAR) and
+                (TituloFinanceiroTable.status eq StatusTitulo.VENCIDO)
+            }
+            .toList()
+        if (pagVencidas.isNotEmpty()) {
+            val total = pagVencidas.fold(BigDecimal.ZERO) { acc, r ->
+                acc.add(r[TituloFinanceiroTable.valorOriginal].subtract(r[TituloFinanceiroTable.valorPago]))
+            }
+            itens += NotificacaoItem(
+                tipo       = "CONTA_PAGAR_VENCIDA",
+                severidade = "CRITICA",
+                titulo     = "${pagVencidas.size} conta(s) a pagar vencida(s)",
+                descricao  = "Total em atraso: R$ ${total.setScale(2, RoundingMode.HALF_UP).toPlainString()}",
+                quantidade = pagVencidas.size,
+                valorTotal = total.toPlainString(),
+                link       = "/financeiro/contas-pagar",
+            )
+        }
+
+        // 3. Parcelas a receber vencendo em até 2 dias
+        val recVencendo = ParcelaFinanceiraTable
+            .join(TituloFinanceiroTable, JoinType.INNER, ParcelaFinanceiraTable.tituloId, TituloFinanceiroTable.id)
+            .select {
+                (TituloFinanceiroTable.tipo eq TipoTitulo.RECEBER) and
+                (ParcelaFinanceiraTable.status eq StatusParcela.ABERTO) and
+                (ParcelaFinanceiraTable.dataVencimento greaterEq hoje.toKotlinDate()) and
+                (ParcelaFinanceiraTable.dataVencimento lessEq amanha2.toKotlinDate())
+            }
+            .toList()
+        if (recVencendo.isNotEmpty()) {
+            val total = recVencendo.fold(BigDecimal.ZERO) { acc, r ->
+                acc.add(r[ParcelaFinanceiraTable.valor].subtract(r[ParcelaFinanceiraTable.valorPago] ?: BigDecimal.ZERO))
+            }
+            itens += NotificacaoItem(
+                tipo       = "TITULO_VENCENDO",
+                severidade = "ALERTA",
+                titulo     = "${recVencendo.size} título(s) vencendo em até 2 dias",
+                descricao  = "Cobranças próximas do vencimento",
+                quantidade = recVencendo.size,
+                valorTotal = total.toPlainString(),
+                link       = "/financeiro/contas-receber",
+            )
+        }
+
+        // 4. Estoque crítico (saldo m³ zerado ou negativo)
+        val estoqueZerado = EstoqueSaldoTable
+            .join(ProdutoTable, JoinType.INNER, EstoqueSaldoTable.produtoId, ProdutoTable.id)
+            .select {
+                (ProdutoTable.tipo eq TipoProduto.MADEIRA) and
+                (EstoqueSaldoTable.saldoM3Disponivel lessEq BigDecimal.ZERO)
+            }
+            .count()
+            .toInt()
+        if (estoqueZerado > 0) {
+            itens += NotificacaoItem(
+                tipo       = "ESTOQUE_CRITICO",
+                severidade = "ALERTA",
+                titulo     = "$estoqueZerado produto(s) com estoque zerado",
+                descricao  = "Madeira com saldo m³ ≤ 0 — reposição necessária",
+                quantidade = estoqueZerado,
+                valorTotal = null,
+                link       = "/estoque",
+            )
+        }
+
+        // 5. Orçamentos sem movimento há mais de 30 dias
+        val orcamentosAntigos = VendaTable
+            .select {
+                (VendaTable.status eq StatusVenda.ORCAMENTO) and
+                (VendaTable.createdAt less limite30Instant)
+            }
+            .count()
+            .toInt()
+        if (orcamentosAntigos > 0) {
+            itens += NotificacaoItem(
+                tipo       = "ORCAMENTO_ANTIGO",
+                severidade = "INFO",
+                titulo     = "$orcamentosAntigos orçamento(s) sem ação há +30 dias",
+                descricao  = "Revisar ou cancelar orçamentos antigos",
+                quantidade = orcamentosAntigos,
+                valorTotal = null,
+                link       = "/vendas/orcamentos",
+            )
+        }
+
+        val criticas = itens.count { it.severidade == "CRITICA" }
+        NotificacoesResponse(total = itens.size, criticas = criticas, itens = itens)
     }
 
     private suspend fun titulosEmAberto(): TitulosAberto = dbQuery {

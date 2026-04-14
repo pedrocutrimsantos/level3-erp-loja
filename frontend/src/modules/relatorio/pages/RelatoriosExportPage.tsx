@@ -251,7 +251,12 @@ function SecaoEstoque() {
   const linhas = data?.linhas ?? []
 
   function nomeArquivo() { return `estoque_${hoje()}` }
-  function subtitulo() { return `Gerado em: ${data?.geradoEm ?? hoje()} · ${data?.totalProdutos ?? 0} produtos` }
+  function subtitulo() {
+    const partes = [`Gerado em: ${data?.geradoEm ?? hoje()}`, `${data?.totalProdutos ?? 0} produtos`]
+    if (data?.totalM3Madeira) partes.push(`Total m³ madeira: ${parseFloat(data.totalM3Madeira).toFixed(4)} m³`)
+    if (data?.totalMetrosLineares) partes.push(`Total m linear: ${parseFloat(data.totalMetrosLineares).toFixed(2)} m`)
+    return partes.join(' · ')
+  }
 
   return (
     <Card>
@@ -265,9 +270,16 @@ function SecaoEstoque() {
           />
         </div>
         {data && (
-          <p className="text-xs text-muted-foreground">
-            Snapshot gerado em {data.geradoEm} · {data.totalProdutos} produtos
-          </p>
+          <div className="flex flex-wrap gap-5 text-xs text-muted-foreground">
+            <span>Snapshot: <span className="font-semibold text-gray-900">{data.geradoEm}</span></span>
+            <span><span className="font-semibold text-gray-900">{data.totalProdutos}</span> produtos</span>
+            {parseFloat(data.totalM3Madeira) > 0 && (
+              <span>Madeira em estoque: <span className="font-semibold text-amber-700">{parseFloat(data.totalM3Madeira).toFixed(4)} m³</span></span>
+            )}
+            {parseFloat(data.totalMetrosLineares) > 0 && (
+              <span>= <span className="font-semibold text-amber-700">{parseFloat(data.totalMetrosLineares).toFixed(2)} m linear</span></span>
+            )}
+          </div>
         )}
       </CardHeader>
       <CardContent>
@@ -544,18 +556,279 @@ function SecaoMargem() {
   )
 }
 
+// ── Seção: Vendas por Vendedor ────────────────────────────────────────────────
+
+function SecaoVendasPorVendedor() {
+  const [dataInicio, setDataInicio] = useState(primeiroDiaMes)
+  const [dataFim, setDataFim] = useState(hoje)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['relatorio-vendas-por-vendedor', dataInicio, dataFim],
+    queryFn: () => relatoriosApi.vendasPorVendedor(dataInicio, dataFim),
+    enabled: !!dataInicio && !!dataFim,
+  })
+
+  const colunas: ColDef[] = [
+    { header: 'Vendedor',     key: 'vendedorNome',        widthChars: 30 },
+    { header: 'Qtd Vendas',  key: 'totalVendas',          widthChars: 12 },
+    { header: 'Faturamento', key: 'totalFaturamento',     widthChars: 16 },
+    { header: 'Ticket Médio', key: 'ticketMedio',         widthChars: 16 },
+    { header: 'Volume m³',   key: 'totalM3',              widthChars: 14 },
+    { header: 'Metro Linear', key: 'totalMetrosLineares', widthChars: 14 },
+  ]
+
+  const linhas = data?.linhas ?? []
+
+  function nomeArquivo() { return `vendas_por_vendedor_${dataInicio}_${dataFim}` }
+  function subtitulo() {
+    return [
+      `Período: ${dataInicio} a ${dataFim}`,
+      data ? `${data.totalVendas} vendas` : '',
+      data ? `Total: ${fmtBrl(data.totalFaturamento)}` : '',
+    ].filter(Boolean).join(' · ')
+  }
+
+  // Participação percentual de cada vendedor
+  const totalFat = parseFloat(data?.totalFaturamento ?? '0') || 1
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle>Vendas por Vendedor</CardTitle>
+          <ExportButtons
+            disabled={!data || linhas.length === 0}
+            onExcel={() => exportarExcel(nomeArquivo(), 'Vendas por Vendedor', colunas, linhas, subtitulo())}
+            onPdf={() => exportarPdf(nomeArquivo(), 'Vendas por Vendedor', subtitulo(), colunas, linhas)}
+          />
+        </div>
+        <PeriodoFilter
+          dataInicio={dataInicio}
+          dataFim={dataFim}
+          onInicioChange={setDataInicio}
+          onFimChange={setDataFim}
+        />
+      </CardHeader>
+      <CardContent>
+        {data && linhas.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-6 text-sm">
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-gray-900">{data.totalVendas}</span> vendas
+            </span>
+            <span className="text-muted-foreground">
+              Total: <span className="font-semibold text-gray-900">{fmtBrl(data.totalFaturamento)}</span>
+            </span>
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-gray-900">{linhas.length}</span> vendedores
+            </span>
+          </div>
+        )}
+        {isLoading ? (
+          <TableSkeleton rows={5} cols={6} />
+        ) : !data || linhas.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Nenhuma venda encontrada no período.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="px-2 py-2 text-left font-semibold text-muted-foreground">Vendedor</th>
+                  <th className="px-2 py-2 text-center font-semibold text-muted-foreground">Qtd Vendas</th>
+                  <th className="px-2 py-2 text-right font-semibold text-muted-foreground">Faturamento</th>
+                  <th className="px-2 py-2 text-right font-semibold text-muted-foreground">% Participação</th>
+                  <th className="px-2 py-2 text-right font-semibold text-muted-foreground">Ticket Médio</th>
+                  <th className="px-2 py-2 text-right font-semibold text-muted-foreground">Volume m³</th>
+                  <th className="px-2 py-2 text-right font-semibold text-muted-foreground">Metro Linear</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhas.map((l, i) => {
+                  const participacao = ((parseFloat(l.totalFaturamento) / totalFat) * 100).toFixed(1)
+                  const barWidth = Math.max(2, parseFloat(participacao))
+                  return (
+                    <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                      <td className="px-2 py-2">
+                        <div className="font-medium text-sm">{l.vendedorNome}</div>
+                        <div className="mt-0.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/60"
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 text-center">{l.totalVendas}</td>
+                      <td className="px-2 py-2 text-right font-semibold">{fmtBrl(l.totalFaturamento)}</td>
+                      <td className="px-2 py-2 text-right">
+                        <span className={`font-medium ${parseFloat(participacao) >= 30 ? 'text-green-700' : 'text-gray-600'}`}>
+                          {participacao}%
+                        </span>
+                      </td>
+                      <td className="px-2 py-2 text-right">{fmtBrl(l.ticketMedio)}</td>
+                      <td className="px-2 py-2 text-right font-mono text-amber-700">
+                        {parseFloat(l.totalM3) > 0 ? `${parseFloat(l.totalM3).toFixed(4)} m³` : '—'}
+                      </td>
+                      <td className="px-2 py-2 text-right font-mono text-amber-700">
+                        {parseFloat(l.totalMetrosLineares) > 0 ? `${parseFloat(l.totalMetrosLineares).toFixed(2)} m` : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/60 font-semibold">
+                  <td className="px-2 py-2 text-xs text-muted-foreground">Total</td>
+                  <td className="px-2 py-2 text-center">{data.totalVendas}</td>
+                  <td className="px-2 py-2 text-right">{fmtBrl(data.totalFaturamento)}</td>
+                  <td className="px-2 py-2 text-right text-muted-foreground">100%</td>
+                  <td />
+                  <td />
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Seção: Volume m³ Vendido ──────────────────────────────────────────────────
+
+function SecaoVolumeVendido() {
+  const [dataInicio, setDataInicio] = useState(primeiroDiaMes)
+  const [dataFim, setDataFim] = useState(hoje)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['relatorio-volume-vendido', dataInicio, dataFim],
+    queryFn: () => relatoriosApi.volumeVendido(dataInicio, dataFim),
+    enabled: !!dataInicio && !!dataFim,
+  })
+
+  const colunas: ColDef[] = [
+    { header: 'Código',      key: 'produtoCodigo',       widthChars: 18 },
+    { header: 'Descrição',   key: 'produtoDescricao',    widthChars: 40 },
+    { header: 'Total m³',    key: 'totalM3',             widthChars: 14 },
+    { header: 'Total m Lin.', key: 'totalMetrosLineares', widthChars: 16 },
+    { header: 'Faturamento', key: 'totalFaturamento',    widthChars: 16 },
+    { header: 'Qtd Vendas',  key: 'quantidadeVendas',    widthChars: 12 },
+  ]
+
+  const linhas = data?.linhas ?? []
+
+  function nomeArquivo() { return `volume_vendido_${dataInicio}_${dataFim}` }
+  function subtitulo() {
+    return [
+      `Período: ${dataInicio} a ${dataFim}`,
+      data ? `Total m³: ${parseFloat(data.totalM3).toFixed(4)} m³` : '',
+      data ? `Total m linear: ${parseFloat(data.totalMetrosLineares).toFixed(2)} m` : '',
+      data ? `Faturamento: ${fmtBrl(data.totalFaturamento)}` : '',
+    ].filter(Boolean).join(' · ')
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle>Volume de Madeira Vendido (m³)</CardTitle>
+          <ExportButtons
+            disabled={!data || linhas.length === 0}
+            onExcel={() => exportarExcel(nomeArquivo(), 'Volume Vendido', colunas, linhas, subtitulo())}
+            onPdf={() => exportarPdf(nomeArquivo(), 'Volume de Madeira Vendido', subtitulo(), colunas, linhas)}
+          />
+        </div>
+        <PeriodoFilter
+          dataInicio={dataInicio}
+          dataFim={dataFim}
+          onInicioChange={setDataInicio}
+          onFimChange={setDataFim}
+        />
+      </CardHeader>
+      <CardContent>
+        {data && linhas.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-6 text-sm">
+            <span className="text-muted-foreground">
+              Volume total: <span className="font-semibold text-amber-700">{parseFloat(data.totalM3).toFixed(4)} m³</span>
+            </span>
+            <span className="text-muted-foreground">
+              Metro linear: <span className="font-semibold text-amber-700">{parseFloat(data.totalMetrosLineares).toFixed(2)} m</span>
+            </span>
+            <span className="text-muted-foreground">
+              Faturamento: <span className="font-semibold text-gray-900">{fmtBrl(data.totalFaturamento)}</span>
+            </span>
+          </div>
+        )}
+        {isLoading ? (
+          <TableSkeleton rows={6} cols={6} />
+        ) : !data || linhas.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Nenhuma venda de madeira encontrada no período.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  {colunas.map((c) => (
+                    <th key={c.key} className="px-2 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">
+                      {c.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {linhas.map((l, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-amber-50/20">
+                    <td className="px-2 py-1.5 font-mono">{l.produtoCodigo}</td>
+                    <td className="px-2 py-1.5 max-w-[220px] truncate">{l.produtoDescricao}</td>
+                    <td className="px-2 py-1.5 text-right font-mono text-amber-700">
+                      {parseFloat(l.totalM3).toFixed(4)} m³
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-mono text-amber-700">
+                      {parseFloat(l.totalMetrosLineares).toFixed(2)} m
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-semibold">{fmtBrl(l.totalFaturamento)}</td>
+                    <td className="px-2 py-1.5 text-center">{l.quantidadeVendas}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/60 font-semibold">
+                  <td colSpan={2} className="px-2 py-2 text-right text-xs text-muted-foreground">Total</td>
+                  <td className="px-2 py-2 text-right font-mono text-amber-800">
+                    {parseFloat(data.totalM3).toFixed(4)} m³
+                  </td>
+                  <td className="px-2 py-2 text-right font-mono text-amber-800">
+                    {parseFloat(data.totalMetrosLineares).toFixed(2)} m
+                  </td>
+                  <td className="px-2 py-2 text-right">{fmtBrl(data.totalFaturamento)}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────────
 
-type Aba = 'vendas' | 'estoque' | 'fluxo' | 'margem'
+type Aba = 'vendas' | 'estoque' | 'fluxo' | 'margem' | 'volume' | 'vendedores'
 
 export default function RelatoriosExportPage() {
   const [aba, setAba] = useState<Aba>('vendas')
 
   const abas: { id: Aba; label: string }[] = [
-    { id: 'vendas',  label: 'Vendas' },
-    { id: 'estoque', label: 'Estoque' },
-    { id: 'fluxo',   label: 'Fluxo de Caixa' },
-    { id: 'margem',  label: 'Margem Bruta' },
+    { id: 'vendas',     label: 'Vendas' },
+    { id: 'estoque',    label: 'Estoque' },
+    { id: 'fluxo',      label: 'Fluxo de Caixa' },
+    { id: 'margem',     label: 'Margem Bruta' },
+    { id: 'volume',     label: 'Volume m³' },
+    { id: 'vendedores', label: 'Por Vendedor' },
   ]
 
   return (
@@ -572,12 +845,12 @@ export default function RelatoriosExportPage() {
       />
 
       {/* Abas */}
-      <div className="mb-6 flex gap-1 border-b border-border">
+      <div className="mb-6 flex gap-1 border-b border-border overflow-x-auto">
         {abas.map((a) => (
           <button
             key={a.id}
             onClick={() => setAba(a.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
               aba === a.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-gray-700'
@@ -588,10 +861,12 @@ export default function RelatoriosExportPage() {
         ))}
       </div>
 
-      {aba === 'vendas'  && <SecaoVendas />}
-      {aba === 'estoque' && <SecaoEstoque />}
-      {aba === 'fluxo'   && <SecaoFluxoCaixa />}
-      {aba === 'margem'  && <SecaoMargem />}
+      {aba === 'vendas'     && <SecaoVendas />}
+      {aba === 'estoque'    && <SecaoEstoque />}
+      {aba === 'fluxo'      && <SecaoFluxoCaixa />}
+      {aba === 'margem'     && <SecaoMargem />}
+      {aba === 'volume'     && <SecaoVolumeVendido />}
+      {aba === 'vendedores' && <SecaoVendasPorVendedor />}
     </div>
   )
 }

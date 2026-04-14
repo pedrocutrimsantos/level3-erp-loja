@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink } from 'react-router-dom'
+import { useAuthStore } from '@/shared/store/authStore'
 import {
   ShoppingCart,
   FileText,
@@ -25,16 +26,22 @@ import {
   X,
   MessageSquare,
   Percent,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 
 // ── Estrutura de navegação ────────────────────────────────────────────────────
+
+// Perfis disponíveis no sistema
+type Perfil = 'VENDEDOR' | 'SUPERVISOR' | 'GERENTE' | 'ESTOQUE' | 'FISCAL' | 'FINANCEIRO' | 'ADMIN'
 
 export interface NavItem {
   label: string
   to: string
   icon: React.ReactNode
   iconColor: string
+  /** Perfis que enxergam este item. Omitir = visível para todos. */
+  perfis?: Perfil[]
 }
 
 export interface NavGroup {
@@ -42,74 +49,93 @@ export interface NavGroup {
   items: NavItem[]
 }
 
+const TODOS: Perfil[] = ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'ESTOQUE', 'FISCAL', 'FINANCEIRO', 'ADMIN']
+
 export const navGroups: NavGroup[] = [
   {
     label: 'Relatórios',
     items: [
-      { label: 'Dashboard', to: '/relatorios/dashboard', iconColor: 'text-blue-400',   icon: <BarChart2 className="h-4 w-4" /> },
-      { label: 'DRE',            to: '/relatorios/dre',            iconColor: 'text-violet-400', icon: <FileText  className="h-4 w-4" /> },
-      { label: 'Margem Período', to: '/relatorios/margem-periodo', iconColor: 'text-emerald-400', icon: <BarChart2 className="h-4 w-4" /> },
-      { label: 'Exportar',       to: '/relatorios/exportar',       iconColor: 'text-cyan-400',   icon: <FileDown  className="h-4 w-4" /> },
+      { label: 'Dashboard',      to: '/relatorios/dashboard',      iconColor: 'text-blue-400',    icon: <BarChart2 className="h-4 w-4" />, perfis: TODOS },
+      { label: 'Metas de Vendas', to: '/relatorios/metas',         iconColor: 'text-rose-400',    icon: <Target    className="h-4 w-4" />, perfis: ['GERENTE', 'SUPERVISOR', 'ADMIN'] },
+      { label: 'DRE',            to: '/relatorios/dre',            iconColor: 'text-violet-400',  icon: <FileText  className="h-4 w-4" />, perfis: ['GERENTE', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Margem Período', to: '/relatorios/margem-periodo', iconColor: 'text-emerald-400', icon: <BarChart2 className="h-4 w-4" />, perfis: ['GERENTE', 'FISCAL', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Exportar',       to: '/relatorios/exportar',       iconColor: 'text-cyan-400',    icon: <FileDown  className="h-4 w-4" />, perfis: ['GERENTE', 'FISCAL', 'FINANCEIRO', 'ADMIN'] },
     ],
   },
   {
     label: 'Vendas',
     items: [
-      { label: 'Balcão',     to: '/vendas/balcao',      iconColor: 'text-emerald-400', icon: <ShoppingCart   className="h-4 w-4" /> },
-      { label: 'Histórico',  to: '/vendas/historico',   iconColor: 'text-green-400',   icon: <History        className="h-4 w-4" /> },
-      { label: 'Orçamentos', to: '/vendas/orcamentos',  iconColor: 'text-teal-400',    icon: <FileText       className="h-4 w-4" /> },
-      { label: 'Devoluções', to: '/vendas/devolucoes',  iconColor: 'text-rose-400',    icon: <ArrowLeftRight className="h-4 w-4" /> },
-      { label: 'Entregas',   to: '/entregas',           iconColor: 'text-sky-400',     icon: <Truck          className="h-4 w-4" /> },
-      { label: 'Promoções',  to: '/vendas/promocoes',   iconColor: 'text-yellow-400',  icon: <Percent        className="h-4 w-4" /> },
+      { label: 'Balcão',     to: '/vendas/balcao',     iconColor: 'text-emerald-400', icon: <ShoppingCart   className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'ADMIN'] },
+      { label: 'Histórico',  to: '/vendas/historico',  iconColor: 'text-green-400',   icon: <History        className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'FISCAL', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Orçamentos', to: '/vendas/orcamentos', iconColor: 'text-teal-400',    icon: <FileText       className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'ADMIN'] },
+      { label: 'Devoluções', to: '/vendas/devolucoes', iconColor: 'text-rose-400',    icon: <ArrowLeftRight className="h-4 w-4" />, perfis: ['SUPERVISOR', 'GERENTE', 'FISCAL', 'ADMIN'] },
+      { label: 'Entregas',   to: '/entregas',          iconColor: 'text-sky-400',     icon: <Truck          className="h-4 w-4" />, perfis: ['SUPERVISOR', 'GERENTE', 'ESTOQUE', 'ADMIN'] },
+      { label: 'Promoções',  to: '/vendas/promocoes',  iconColor: 'text-yellow-400',  icon: <Percent        className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'ADMIN'] },
     ],
   },
   {
     label: 'Estoque',
     items: [
-      { label: 'Produtos',        to: '/produtos',              iconColor: 'text-orange-400', icon: <Package        className="h-4 w-4" /> },
-      { label: 'Preços de Venda', to: '/produtos/precos',       iconColor: 'text-amber-400',  icon: <Tag            className="h-4 w-4" /> },
-      { label: 'Saldo',           to: '/estoque',               iconColor: 'text-yellow-400', icon: <Package        className="h-4 w-4" /> },
-      { label: 'Movimentações',   to: '/estoque/movimentacoes', iconColor: 'text-lime-400',   icon: <ArrowLeftRight className="h-4 w-4" /> },
+      { label: 'Produtos',        to: '/produtos',              iconColor: 'text-orange-400', icon: <Package        className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'ESTOQUE', 'FISCAL', 'ADMIN'] },
+      { label: 'Preços de Venda', to: '/produtos/precos',       iconColor: 'text-amber-400',  icon: <Tag            className="h-4 w-4" />, perfis: ['GERENTE', 'ADMIN'] },
+      { label: 'Saldo',           to: '/estoque',               iconColor: 'text-yellow-400', icon: <Package        className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'ESTOQUE', 'ADMIN'] },
+      { label: 'Movimentações',   to: '/estoque/movimentacoes', iconColor: 'text-lime-400',   icon: <ArrowLeftRight className="h-4 w-4" />, perfis: ['SUPERVISOR', 'GERENTE', 'ESTOQUE', 'ADMIN'] },
     ],
   },
   {
     label: 'Clientes',
     items: [
-      { label: 'Clientes', to: '/clientes', iconColor: 'text-purple-400', icon: <Users className="h-4 w-4" /> },
+      { label: 'Clientes', to: '/clientes', iconColor: 'text-purple-400', icon: <Users className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'FINANCEIRO', 'ADMIN'] },
     ],
   },
   {
     label: 'Compras',
     items: [
-      { label: 'Entradas',     to: '/compras/pedidos', iconColor: 'text-indigo-400', icon: <Truck     className="h-4 w-4" /> },
-      { label: 'Fornecedores', to: '/fornecedores',    iconColor: 'text-violet-400', icon: <Building2 className="h-4 w-4" /> },
+      { label: 'Entradas',     to: '/compras/pedidos', iconColor: 'text-indigo-400', icon: <Truck     className="h-4 w-4" />, perfis: ['GERENTE', 'ESTOQUE', 'FISCAL', 'ADMIN'] },
+      { label: 'Fornecedores', to: '/fornecedores',    iconColor: 'text-violet-400', icon: <Building2 className="h-4 w-4" />, perfis: ['GERENTE', 'ESTOQUE', 'ADMIN'] },
     ],
   },
   {
     label: 'Fiscal',
     items: [
-      { label: 'NF-e', to: '/fiscal/nfe', iconColor: 'text-red-400', icon: <FileCheck className="h-4 w-4" /> },
+      { label: 'NF-e',     to: '/fiscal/nfe',  iconColor: 'text-red-400',    icon: <FileCheck className="h-4 w-4" />, perfis: ['FISCAL', 'GERENTE', 'ADMIN'] },
+      { label: 'SPED EFD', to: '/fiscal/sped', iconColor: 'text-orange-400', icon: <FileDown  className="h-4 w-4" />, perfis: ['FISCAL', 'GERENTE', 'ADMIN'] },
     ],
   },
   {
     label: 'Financeiro',
     items: [
-      { label: 'Caixa',            to: '/financeiro/caixa',          iconColor: 'text-emerald-400', icon: <Wallet        className="h-4 w-4" /> },
-      { label: 'Contas a Receber', to: '/financeiro/contas-receber', iconColor: 'text-green-400',   icon: <CreditCard    className="h-4 w-4" /> },
-      { label: 'Contas a Pagar',   to: '/financeiro/contas-pagar',   iconColor: 'text-red-400',     icon: <CreditCard    className="h-4 w-4" /> },
-      { label: 'Títulos',          to: '/financeiro/titulos',        iconColor: 'text-blue-400',    icon: <CreditCard    className="h-4 w-4" /> },
-      { label: 'Fluxo de Caixa',   to: '/financeiro/fluxo-caixa',   iconColor: 'text-cyan-400',    icon: <CalendarClock className="h-4 w-4" /> },
-      { label: 'Cobrança',         to: '/financeiro/cobranca',       iconColor: 'text-violet-400',  icon: <MessageSquare className="h-4 w-4" /> },
+      { label: 'Caixa',            to: '/financeiro/caixa',          iconColor: 'text-emerald-400', icon: <Wallet        className="h-4 w-4" />, perfis: ['VENDEDOR', 'SUPERVISOR', 'GERENTE', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Contas a Receber', to: '/financeiro/contas-receber', iconColor: 'text-green-400',   icon: <CreditCard    className="h-4 w-4" />, perfis: ['SUPERVISOR', 'GERENTE', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Contas a Pagar',   to: '/financeiro/contas-pagar',   iconColor: 'text-red-400',     icon: <CreditCard    className="h-4 w-4" />, perfis: ['GERENTE', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Títulos',          to: '/financeiro/titulos',        iconColor: 'text-blue-400',    icon: <CreditCard    className="h-4 w-4" />, perfis: ['SUPERVISOR', 'GERENTE', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Fluxo de Caixa',   to: '/financeiro/fluxo-caixa',   iconColor: 'text-cyan-400',    icon: <CalendarClock className="h-4 w-4" />, perfis: ['GERENTE', 'FINANCEIRO', 'ADMIN'] },
+      { label: 'Cobrança',         to: '/financeiro/cobranca',       iconColor: 'text-violet-400',  icon: <MessageSquare className="h-4 w-4" />, perfis: ['GERENTE', 'FINANCEIRO', 'ADMIN'] },
     ],
   },
   {
     label: 'Configurações',
     items: [
-      { label: 'Empresa',  to: '/configuracoes/empresa',  iconColor: 'text-slate-400', icon: <Building2 className="h-4 w-4" /> },
-      { label: 'Usuários', to: '/configuracoes/usuarios', iconColor: 'text-zinc-400',  icon: <Users2    className="h-4 w-4" /> },
+      { label: 'Empresa',  to: '/configuracoes/empresa',  iconColor: 'text-slate-400', icon: <Building2 className="h-4 w-4" />, perfis: ['ADMIN'] },
+      { label: 'Usuários', to: '/configuracoes/usuarios', iconColor: 'text-zinc-400',  icon: <Users2    className="h-4 w-4" />, perfis: ['ADMIN'] },
     ],
   },
 ]
+
+/**
+ * Filtra navGroups pelo perfil do usuário logado.
+ * Remove itens que o perfil não pode ver e grupos que ficam vazios.
+ */
+export function filtrarNavGroups(perfil: string | null): NavGroup[] {
+  return navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.perfis || item.perfis.includes(perfil as Perfil),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
+}
 
 // ── Tooltip portal (modo compacto) ────────────────────────────────────────────
 
@@ -272,6 +298,9 @@ export function Sidebar({
   showCloseButton,
   onClose,
 }: SidebarProps) {
+  const perfil = useAuthStore((s) => s.perfil)
+  const gruposFiltrados = filtrarNavGroups(perfil)
+
   return (
     <div className="flex flex-col h-full">
       {/* ── Logo / header ── */}
@@ -337,7 +366,7 @@ export function Sidebar({
           isCollapsed ? 'px-0' : 'px-2',
         )}
       >
-        {navGroups.map((group) => (
+        {gruposFiltrados.map((group) => (
           <SidebarGroup
             key={group.label}
             group={group}

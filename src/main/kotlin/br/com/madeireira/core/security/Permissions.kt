@@ -30,6 +30,7 @@ object Permissions {
     const val EXPORTAR   = "EXPORTAR"
 
     // ── Permissões especiais de negócio ────────────────────────────
+    const val VEN_CANCELAR            = "VEN:CANCELAR"
     const val VEN_DESCONTO_SUPERVISOR = "VEN:DESCONTO_SUPERVISOR"
     const val VEN_CANCELAR_NF         = "VEN:CANCELAR_NF"
     const val VEN_PRECO_ABAIXO_MINIMO = "VEN:PRECO_ABAIXO_MINIMO"
@@ -59,8 +60,6 @@ object Permissions {
      * FINANCEIRO  = Responsável financeiro
      * ADMIN       = Acesso total ao sistema
      */
-    private const val CANCELAR_VENDA = "VEN:CANCELAR"
-
     val matrizPermissoes: Map<String, Set<String>> = mapOf(
 
         "VENDEDOR" to setOf(
@@ -82,7 +81,7 @@ object Permissions {
         "SUPERVISOR" to setOf(
             // Tudo do VENDEDOR +
             of(MOD_VEN, VISUALIZAR), of(MOD_VEN, CRIAR), of(MOD_VEN, EDITAR),
-            CANCELAR_VENDA,
+            VEN_CANCELAR,
             // Permissões especiais de negócio
             VEN_DESCONTO_SUPERVISOR,
             VEN_PRECO_ABAIXO_MINIMO,
@@ -91,8 +90,9 @@ object Permissions {
             of(MOD_EST, VISUALIZAR), of(MOD_EST, CRIAR),
             EST_AJUSTE_ESTOQUE,
             EST_APROVAR_PERDA,
-            // Cadastros: leitura
+            // Cadastros: leitura + criar/editar clientes (mesmas do VENDEDOR)
             of(MOD_CAD, VISUALIZAR),
+            "CAD:CLIENTE:CRIAR", "CAD:CLIENTE:EDITAR",
             // Financeiro: visualizar
             of(MOD_FIN, VISUALIZAR),
             // Caixa
@@ -106,6 +106,8 @@ object Permissions {
             of(MOD_COM, VISUALIZAR), of(MOD_COM, CRIAR), of(MOD_COM, EDITAR), of(MOD_COM, APROVAR),
             of(MOD_EST, VISUALIZAR), of(MOD_EST, CRIAR), of(MOD_EST, EDITAR), of(MOD_EST, EXPORTAR),
             of(MOD_CAD, VISUALIZAR), of(MOD_CAD, CRIAR), of(MOD_CAD, EDITAR),
+            // Permissões específicas de cliente (para cobrir ClienteRoutes que usa CAD:CLIENTE:*)
+            "CAD:CLIENTE:CRIAR", "CAD:CLIENTE:EDITAR",
             of(MOD_ENT, VISUALIZAR), of(MOD_ENT, CRIAR), of(MOD_ENT, EDITAR),
             of(MOD_FIN, VISUALIZAR), of(MOD_FIN, CRIAR), of(MOD_FIN, EDITAR), of(MOD_FIN, EXPORTAR),
             of(MOD_REL, VISUALIZAR), of(MOD_REL, EXPORTAR),
@@ -149,8 +151,6 @@ object Permissions {
     )
 
     // ── Constantes para ações específicas não cobertas pelo padrão ─
-    // (CANCELAR_VENDA movido para antes de matrizPermissoes para evitar erro de inicialização)
-
     /**
      * Verifica se um perfil possui uma permissão específica.
      * Admin tem acesso a tudo via curinga "*".

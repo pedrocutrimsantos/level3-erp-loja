@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.compra.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.compra.application.CompraService
 import br.com.madeireira.modules.compra.api.dto.EntradaCompraRequest
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
@@ -16,12 +18,14 @@ fun Route.compraRoutes(service: CompraService) {
     route("/api/v1/compras") {
             // GET /api/v1/compras/entradas?limit=50
             get("entradas") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_COM, Permissions.VISUALIZAR))) return@get
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 50
                 call.respond(HttpStatusCode.OK, service.listarEntradas(limit))
             }
 
             // POST /api/v1/compras/entrada
             post("entrada") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_COM, Permissions.CRIAR))) return@post
                 val req = try {
                     call.receive<EntradaCompraRequest>()
                 } catch (e: Exception) {

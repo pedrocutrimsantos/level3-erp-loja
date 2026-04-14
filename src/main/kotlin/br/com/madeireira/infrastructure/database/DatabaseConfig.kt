@@ -81,6 +81,15 @@ object DatabaseConfig {
     }
 
     /**
+     * Verifica conectividade com o banco de dados.
+     * Retorna true se a conexão estiver saudável, false caso contrário.
+     * Usado pelo endpoint /health para readiness checks.
+     */
+    fun ping(): Boolean = runCatching {
+        dataSource.connection.use { it.isValid(2) }
+    }.getOrDefault(false)
+
+    /**
      * Executa um bloco dentro de uma transação.
      * Se houver um TenantSchema no contexto de coroutine, o search_path é ajustado
      * automaticamente para o schema do tenant — sem nenhuma mudança nos repositórios existentes.

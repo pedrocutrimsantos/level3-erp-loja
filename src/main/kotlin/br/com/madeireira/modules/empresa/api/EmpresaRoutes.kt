@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.empresa.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.empresa.infrastructure.EmpresaData
 import br.com.madeireira.modules.empresa.infrastructure.EmpresaRepositoryImpl
 import br.com.madeireira.modules.fiscal.infrastructure.sefaz.SefazCertificadoLoader  // valida cert no upload
@@ -83,6 +85,7 @@ fun Route.empresaRoutes(repo: EmpresaRepositoryImpl) {
 
         // GET /api/v1/empresa
         get {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.VISUALIZAR))) return@get
             val empresa = repo.get()
             if (empresa == null) {
                 call.respond(HttpStatusCode.NotFound, ErroResponse("Empresa não configurada"))
@@ -93,6 +96,7 @@ fun Route.empresaRoutes(repo: EmpresaRepositoryImpl) {
 
         // PUT /api/v1/empresa — cria ou atualiza dados cadastrais (upsert)
         put {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.EDITAR))) return@put
             val req = try {
                 call.receive<EmpresaRequest>()
             } catch (e: Exception) {
@@ -150,6 +154,7 @@ fun Route.empresaRoutes(repo: EmpresaRepositoryImpl) {
 
         // POST /api/v1/empresa/certificado — envia o .pfx como base64 + senha
         post("/certificado") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.EDITAR))) return@post
             val req = try {
                 call.receive<CertificadoUploadRequest>()
             } catch (e: Exception) {
@@ -199,6 +204,7 @@ fun Route.empresaRoutes(repo: EmpresaRepositoryImpl) {
 
         // DELETE /api/v1/empresa/certificado — remove o certificado
         delete("/certificado") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CFG, Permissions.EDITAR))) return@delete
             repo.removerCertificado()
             call.respond(HttpStatusCode.NoContent)
         }

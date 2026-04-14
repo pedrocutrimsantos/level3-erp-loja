@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users } from 'lucide-react'
+import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
+import { Perms } from '@/shared/utils/permissions'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
 import { Button } from '@/shared/components/ui/Button'
 import { Input } from '@/shared/components/ui/Input'
@@ -49,6 +51,7 @@ export default function ClienteListPage() {
   const [apenasAtivos, setApenasAtivos] = useState(true)
   const [busca, setBusca] = useState('')
   const { data: clientes, isLoading, isError } = useClientes(apenasAtivos)
+  const podeCriarCliente = useTemPermissao(Perms.CAD_CLIENTE_CRIAR)
 
   const filtrados = useMemo(() => {
     if (!clientes) return []
@@ -70,7 +73,7 @@ export default function ClienteListPage() {
       title={busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
       description={!busca ? 'Cadastre o primeiro cliente.' : undefined}
       action={
-        !busca ? (
+        !busca && podeCriarCliente ? (
           <Button size="sm" onClick={() => navigate('/clientes/novo')}>
             + Novo Cliente
           </Button>
@@ -86,9 +89,11 @@ export default function ClienteListPage() {
         title="Clientes"
         subtitle="Gerencie o cadastro de clientes"
         actions={
-          <Button onClick={() => navigate('/clientes/novo')}>
-            + Novo Cliente
-          </Button>
+          podeCriarCliente ? (
+            <Button onClick={() => navigate('/clientes/novo')}>
+              + Novo Cliente
+            </Button>
+          ) : undefined
         }
       />
 

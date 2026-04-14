@@ -518,6 +518,7 @@ export default function VendaBalcaoPage() {
   const [numeroParcelas, setNumeroParcelas] = useState(1)
   const [vendaRealizada, setVendaRealizada] = useState<VendaBalcaoResponse | null>(null)
   const [erroVenda, setErroVenda] = useState<string | null>(null)
+  const [confirmandoVenda, setConfirmandoVenda] = useState(false)
 
   const tipoPagamento: 'VISTA' | 'PRAZO' = useMemo(
     () => (VISTA_SET.has(formaPagamento) ? 'VISTA' : 'PRAZO'),
@@ -553,6 +554,7 @@ export default function VendaBalcaoPage() {
     }
   }
 
+  // Valida e abre o modal de resumo
   function confirmarVenda() {
     if (itens.length === 0) return
     if (formaPagamento === 'FIADO' && !clienteSelecionado) {
@@ -560,9 +562,15 @@ export default function VendaBalcaoPage() {
       return
     }
     setErroVenda(null)
+    setConfirmandoVenda(true)
+  }
+
+  // Chamado somente após confirmação no resumo
+  function executarVenda() {
     registrarVenda(montarReq(), {
-      onSuccess: (data) => { setVendaRealizada(data); setItens([]) },
+      onSuccess: (data) => { setConfirmandoVenda(false); setVendaRealizada(data); setItens([]) },
       onError: (err: unknown) => {
+        setConfirmandoVenda(false)
         setErroVenda(
           (err as any)?.response?.data?.detalhes ??
           (err as any)?.response?.data?.erro ??
@@ -1032,6 +1040,83 @@ export default function VendaBalcaoPage() {
         tipoPessoa={tipoPessoa}
         tipoPagamento={tipoPagamento}
       />
+
+      {/* Modal de resumo da venda */}
+      <Modal
+        open={confirmandoVenda}
+        onClose={() => setConfirmandoVenda(false)}
+        title="Resumo da Venda"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setConfirmandoVenda(false)} disabled={isPending}>
+              Voltar
+            </Button>
+            <Button
+              className="font-bold"
+              onClick={executarVenda}
+              loading={isPending}
+            >
+              Confirmar Venda
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Itens */}
+          <div className="divide-y rounded-lg border border-border overflow-hidden">
+            {itens.map((item, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 px-4 py-3 bg-card">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground leading-tight truncate">
+                    {item.descricao}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {item.tipo === 'MADEIRA'
+                      ? `${formatarMetros(item.metros)} m · R$ ${item.precoUnitario.toFixed(2)}/m`
+                      : `${item.qtd} ${item.unidadeSigla} · R$ ${item.precoUnitario.toFixed(2)}/un`}
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
+                  {fmt(item.valorTotal)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Detalhes do fechamento */}
+          <div className="rounded-lg border border-border bg-muted/20 divide-y divide-border">
+            {clienteSelecionado && (
+              <div className="flex justify-between px-4 py-2.5 text-sm">
+                <span className="text-muted-foreground">Cliente</span>
+                <span className="font-medium">{clienteSelecionado.nome}</span>
+              </div>
+            )}
+            <div className="flex justify-between px-4 py-2.5 text-sm">
+              <span className="text-muted-foreground">Pagamento</span>
+              <span className="font-medium">
+                {FORMAS_PAGAMENTO.find(f => f.value === formaPagamento)?.label}
+                {formaPagamento === 'CARTAO_CREDITO' && numeroParcelas > 1 && (
+                  <span className="ml-1 text-muted-foreground">
+                    ({numeroParcelas}× de {fmt(totalGeral / numeroParcelas)})
+                  </span>
+                )}
+              </span>
+            </div>
+            {formaPagamento === 'FIADO' && dataVencimentoFiado && (
+              <div className="flex justify-between px-4 py-2.5 text-sm">
+                <span className="text-muted-foreground">Vencimento</span>
+                <span className="font-medium">
+                  {new Date(dataVencimentoFiado + 'T12:00:00').toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between px-4 py-3 text-base font-black">
+              <span>Total</span>
+              <span className="text-primary">{fmt(totalGeral)}</span>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

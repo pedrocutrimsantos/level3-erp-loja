@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.estoque.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.estoque.api.dto.AjusteEstoqueRequest
 import br.com.madeireira.modules.estoque.application.EstoqueService
 import br.com.madeireira.modules.produto.api.dto.ErroResponse
@@ -16,93 +18,70 @@ import java.util.UUID
 fun Route.estoqueRoutes(service: EstoqueService) {
     route("/api/v1/estoque") {
 
-            // GET /api/v1/estoque/saldo/{produtoId}
             get("saldo/{produtoId}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_EST, Permissions.VISUALIZAR))) return@get
                 val id = parseUUID(call.parameters["produtoId"]) ?: run {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        ErroResponse("ID inválido", "O parâmetro 'produtoId' não é um UUID válido"),
-                    )
+                    call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'produtoId' não é um UUID válido"))
                     return@get
                 }
                 try {
-                    val saldo = service.consultarSaldo(id)
-                    call.respond(HttpStatusCode.OK, saldo)
+                    call.respond(HttpStatusCode.OK, service.consultarSaldo(id))
                 } catch (e: NoSuchElementException) {
                     call.respond(HttpStatusCode.NotFound, ErroResponse("Não encontrado", e.message))
                 }
             }
 
-            // GET /api/v1/estoque/movimentacoes?produtoId=...&tipo=...&limit=100
             get("movimentacoes") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_EST, Permissions.VISUALIZAR))) return@get
                 val produtoId = call.request.queryParameters["produtoId"]?.let { parseUUID(it) }
                 val tipo  = call.request.queryParameters["tipo"]
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 500) ?: 100
-                val movs = service.listarMovimentacoesGeral(produtoId, tipo, limit)
-                call.respond(HttpStatusCode.OK, movs)
+                call.respond(HttpStatusCode.OK, service.listarMovimentacoesGeral(produtoId, tipo, limit))
             }
 
-            // GET /api/v1/estoque/movimentacoes/{produtoId}?limit=50
             get("movimentacoes/{produtoId}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_EST, Permissions.VISUALIZAR))) return@get
                 val id = parseUUID(call.parameters["produtoId"]) ?: run {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        ErroResponse("ID inválido", "O parâmetro 'produtoId' não é um UUID válido"),
-                    )
+                    call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'produtoId' não é um UUID válido"))
                     return@get
                 }
                 val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 50
                 try {
-                    val movimentacoes = service.listarMovimentacoes(id, limit)
-                    call.respond(HttpStatusCode.OK, movimentacoes)
+                    call.respond(HttpStatusCode.OK, service.listarMovimentacoes(id, limit))
                 } catch (e: NoSuchElementException) {
                     call.respond(HttpStatusCode.NotFound, ErroResponse("Não encontrado", e.message))
                 }
             }
 
-            // GET /api/v1/estoque/sublotes/{produtoId}
             get("sublotes/{produtoId}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_EST, Permissions.VISUALIZAR))) return@get
                 val id = parseUUID(call.parameters["produtoId"]) ?: run {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        ErroResponse("ID inválido", "O parâmetro 'produtoId' não é um UUID válido"),
-                    )
+                    call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido", "O parâmetro 'produtoId' não é um UUID válido"))
                     return@get
                 }
                 try {
-                    val sublotes = service.listarSublotes(id)
-                    call.respond(HttpStatusCode.OK, sublotes)
+                    call.respond(HttpStatusCode.OK, service.listarSublotes(id))
                 } catch (e: NoSuchElementException) {
                     call.respond(HttpStatusCode.NotFound, ErroResponse("Não encontrado", e.message))
                 }
             }
 
-            // POST /api/v1/estoque/ajuste
             post("ajuste") {
+                if (!call.requerPermissao(Permissions.EST_AJUSTE_ESTOQUE)) return@post
                 val req = try {
                     call.receive<AjusteEstoqueRequest>()
                 } catch (e: Exception) {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        ErroResponse("Requisição inválida", e.message),
-                    )
+                    call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
                     return@post
                 }
                 try {
-                    val mov = service.registrarAjuste(req)
-                    call.respond(HttpStatusCode.Created, mov)
+                    call.respond(HttpStatusCode.Created, service.registrarAjuste(req))
                 } catch (e: IllegalArgumentException) {
-                    call.respond(
-                        HttpStatusCode.UnprocessableEntity,
-                        ErroResponse("Erro de validação", e.message),
-                    )
+                    call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro de validação", e.message))
                 } catch (e: NoSuchElementException) {
                     call.respond(HttpStatusCode.NotFound, ErroResponse("Não encontrado", e.message))
                 } catch (e: ConcurrentModificationException) {
-                    call.respond(
-                        HttpStatusCode.Conflict,
-                        ErroResponse("Conflito de versão", e.message),
-                    )
+                    call.respond(HttpStatusCode.Conflict, ErroResponse("Conflito de versão", e.message))
                 }
             }
         }

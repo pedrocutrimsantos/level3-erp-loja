@@ -37,6 +37,8 @@ import br.com.madeireira.modules.empresa.api.empresaRoutes
 import br.com.madeireira.modules.empresa.infrastructure.EmpresaRepositoryImpl
 import br.com.madeireira.modules.fiscal.api.nfeRoutes
 import br.com.madeireira.modules.fiscal.application.AmbienteGuard
+import br.com.madeireira.modules.fiscal.sped.SpedEfdService
+import br.com.madeireira.modules.fiscal.sped.spedRoutes
 import br.com.madeireira.modules.fiscal.application.NfeService
 import br.com.madeireira.modules.fiscal.application.XmlNfeArquivadorLocal
 import br.com.madeireira.modules.fiscal.infrastructure.NfRepositoryImpl
@@ -57,6 +59,8 @@ import br.com.madeireira.modules.cobranca.application.CobrancaService
 import br.com.madeireira.modules.cobranca.infrastructure.CobrancaRepositoryImpl
 import br.com.madeireira.modules.relatorio.api.relatorioRoutes
 import br.com.madeireira.modules.relatorio.application.RelatorioService
+import br.com.madeireira.modules.meta.api.metaVendaRoutes
+import br.com.madeireira.modules.meta.application.MetaVendaService
 import br.com.madeireira.modules.tenant.api.tenantRoutes
 import br.com.madeireira.modules.tenant.application.TenantProvisioner
 import br.com.madeireira.modules.usuario.api.usuarioRoutes
@@ -79,15 +83,20 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.callloging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.ratelimit.RateLimit
+import io.ktor.server.plugins.ratelimit.RateLimitName
+import io.ktor.server.plugins.ratelimit.rateLimit
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.application.ApplicationCallPipeline
+import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
 import io.ktor.server.auth.principal
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.minutes
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
@@ -113,7 +122,14 @@ fun Application.module() {
     }
 
     install(CORS) {
-        anyHost() // dev only — restringir em produção
+        // Em produção: defina ALLOWED_ORIGIN=app.seudominio.com para restringir.
+        // Sem a variável (dev/local): aceita qualquer origem.
+        val allowedOrigin = System.getenv("ALLOWED_ORIGIN")?.trim()?.takeIf { it.isNotBlank() }
+        if (allowedOrigin != null) {
+            allowHost(allowedOrigin, schemes = listOf("https", "http"))
+        } else {
+            anyHost()
+        }
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
@@ -122,6 +138,15 @@ fun Application.module() {
         allowMethod(HttpMethod.Options)
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
+    }
+
+    // Rate limiting — protege o endpoint de login contra brute-force.
+    // 10 tentativas por IP por minuto; reseta automaticamente a cada minuto.
+    install(RateLimit) {
+        register(RateLimitName("login")) {
+            rateLimiter(limit = 10, refillPeriod = 1.minutes)
+            requestKey { call -> call.request.local.remoteAddress }
+        }
     }
 
     install(CallLogging)
@@ -183,7 +208,7 @@ fun Application.module() {
     val turnoService         = TurnoService(turnoRepository, vendaService)
 
     val devolucaoRepository  = DevolucaoRepositoryImpl()
-    val devolucaoService     = DevolucaoService(devolucaoRepository, vendaRepository, estoqueRepository, produtoRepository)
+    val devolucaoService     = DevolucaoService(devolucaoRepository, vendaRepository, estoqueRepository, produtoRepository, tituloRepository)
 
     val entregaRepository    = EntregaRepositoryImpl()
     val entregaService       = EntregaService(entregaRepository, vendaRepository, produtoRepository)
@@ -217,8 +242,24 @@ fun Application.module() {
 
     routing {
 
+        // ── Health check — público, sem JWT ──────────────────────────────────
+        // Usado pelo docker-compose healthcheck e load balancers.
+        // GET /health → 200 {"status":"ok","db":"ok"}
+        // GET /health → 503 {"status":"degraded","db":"error"} se o banco estiver fora
+        get("/health") {
+            val dbOk = DatabaseConfig.ping()
+            if (dbOk) {
+                call.respond(HttpStatusCode.OK, mapOf("status" to "ok", "db" to "ok"))
+            } else {
+                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("status" to "degraded", "db" to "error"))
+            }
+        }
+
         // Rotas públicas (sem JWT)
-        authRoutes(authService)
+        // Login com rate limiting — máximo 10 tentativas/minuto por IP
+        rateLimit(RateLimitName("login")) {
+            authRoutes(authService)
+        }
         primeiroAcessoRoutes(primeiroAcessoService)
         tenantRoutes(tenantProvisioner)
 
@@ -250,7 +291,9 @@ fun Application.module() {
             turnoRoutes(turnoService)
             caixaRoutes(vendaService)
             nfeRoutes(nfeService)
+            spedRoutes(SpedEfdService())
             relatorioRoutes(RelatorioService())
+            metaVendaRoutes(MetaVendaService())
             usuarioRoutes(usuarioService)
             empresaRoutes(empresaRepository)
             cobrancaRoutes(cobrancaService)

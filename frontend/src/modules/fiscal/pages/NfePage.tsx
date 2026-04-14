@@ -1,6 +1,8 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { FileCheck, FileUp, Printer, RefreshCw, Send, XCircle } from 'lucide-react'
 import { PageHeader } from '@/shared/components/layout/PageHeader'
+import { useTemPermissao } from '@/shared/hooks/useTemPermissao'
+import { Perms } from '@/shared/utils/permissions'
 import { Badge } from '@/shared/components/ui/Badge'
 import { Button } from '@/shared/components/ui/Button'
 import { Card, CardContent } from '@/shared/components/ui/Card'
@@ -14,6 +16,10 @@ import {
   useNfePendentes, usePreviewXml, useReprocessarNfe,
 } from '../hooks/useNfe'
 import type { NfeXmlItemPreview } from '@/shared/api/nfe'
+import { produtosApi } from '@/shared/api/produtos'
+import type { ProdutoResponse } from '@/shared/api/produtos'
+import { useFornecedores } from '@/modules/fornecedor/hooks/useFornecedores'
+import type { FornecedorResponse } from '@/shared/api/fornecedores'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -64,15 +70,200 @@ function formatarDataHora(iso: string) {
 
 // ── Produto Selector ──────────────────────────────────────────────────────────
 
-function ProdutoSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ProdutoSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const [query, setQuery]             = useState('')
+  const [resultados, setResultados]   = useState<ProdutoResponse[]>([])
+  const [aberto, setAberto]           = useState(false)
+  const [selecionado, setSelecionado] = useState<ProdutoResponse | null>(null)
+  const containerRef                  = useRef<HTMLDivElement>(null)
+
+  // pesquisa com debounce
+  useEffect(() => {
+    if (!aberto || query.trim().length < 2) { setResultados([]); return }
+    const t = setTimeout(() => {
+      produtosApi.pesquisar(query).then(setResultados).catch(() => setResultados([]))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [query, aberto])
+
+  // fechar ao clicar fora
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setAberto(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // carregar nome quando já existe valor (ex: reabertura do modal)
+  useEffect(() => {
+    if (value && !selecionado) {
+      produtosApi.buscar(value).then(setSelecionado).catch(() => {})
+    }
+    if (!value) setSelecionado(null)
+  }, [value])
+
+  function handleSelect(p: ProdutoResponse) {
+    setSelecionado(p)
+    setQuery('')
+    setAberto(false)
+    onChange(p.id)
+  }
+
+  function handleClear() {
+    setSelecionado(null)
+    setQuery('')
+    setResultados([])
+    onChange('')
+  }
+
+  if (selecionado) {
+    return (
+      <div className="flex items-center gap-1 rounded border border-primary/40 bg-primary/5 px-2 py-1">
+        <span className="flex-1 truncate text-xs text-foreground">{selecionado.descricao}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">{selecionado.codigo}</span>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="ml-1 shrink-0 text-sm leading-none text-muted-foreground hover:text-destructive"
+          title="Remover seleção"
+        >
+          ×
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <input
-      type="text"
-      placeholder="UUID do produto no sistema"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded border border-border bg-background px-2 py-1 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
-    />
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        placeholder="Buscar produto..."
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setAberto(true) }}
+        onFocus={() => setAberto(true)}
+        className="w-full rounded border border-border bg-background px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+      />
+      {aberto && resultados.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-40 w-72 overflow-y-auto rounded border border-border bg-popover shadow-lg">
+          {resultados.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted/60"
+              onMouseDown={() => handleSelect(p)}
+            >
+              <span className="shrink-0 font-mono text-muted-foreground">{p.codigo}</span>
+              <span className="flex-1 truncate text-foreground">{p.descricao}</span>
+              <span className="shrink-0 text-muted-foreground">{p.unidadeVendaSigla}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {aberto && query.trim().length >= 2 && resultados.length === 0 && (
+        <div className="absolute left-0 top-full z-50 mt-0.5 w-72 rounded border border-border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-lg">
+          Nenhum produto encontrado.
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Fornecedor Selector ───────────────────────────────────────────────────────
+
+function FornecedorSelect({
+  value,
+  onChange,
+  cnpjHint,
+}: {
+  value: FornecedorResponse | null
+  onChange: (f: FornecedorResponse | null) => void
+  cnpjHint?: string  // CNPJ vindo do XML para auto-match
+}) {
+  const { data: fornecedores } = useFornecedores()
+  const [busca, setBusca] = useState('')
+  const [aberto, setAberto] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-match por CNPJ ao carregar
+  useEffect(() => {
+    if (!cnpjHint || !fornecedores || value) return
+    const cnpjLimpo = cnpjHint.replace(/\D/g, '')
+    const match = fornecedores.find((f) => f.cnpjCpf.replace(/\D/g, '') === cnpjLimpo)
+    if (match) onChange(match)
+  }, [cnpjHint, fornecedores])
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node))
+        setAberto(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtrados = (fornecedores ?? [])
+    .filter((f) => {
+      const t = busca.toLowerCase().trim()
+      if (!t) return true
+      return (
+        f.razaoSocial.toLowerCase().includes(t) ||
+        (f.nomeFantasia ?? '').toLowerCase().includes(t) ||
+        f.cnpjCpf.replace(/\D/g, '').includes(t.replace(/\D/g, ''))
+      )
+    })
+    .slice(0, 20)
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-2 rounded border border-primary/40 bg-primary/5 px-2 py-1.5 text-sm">
+        <span className="flex-1 truncate font-medium text-foreground">{value.razaoSocial}</span>
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">{value.cnpjCpf}</span>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="ml-1 text-muted-foreground hover:text-destructive text-sm leading-none"
+          title="Remover vínculo"
+        >
+          ×
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        placeholder="Buscar por nome ou CNPJ…"
+        value={busca}
+        onChange={(e) => { setBusca(e.target.value); setAberto(true) }}
+        onFocus={() => setAberto(true)}
+        className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40"
+      />
+      {aberto && filtrados.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-0.5 w-full max-h-48 overflow-y-auto rounded border border-border bg-popover shadow-lg">
+          {filtrados.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 border-b border-border/50 last:border-b-0"
+              onMouseDown={() => { onChange(f); setBusca(''); setAberto(false) }}
+            >
+              <span className="flex-1 truncate font-medium text-foreground">{f.razaoSocial}</span>
+              <span className="shrink-0 font-mono text-xs text-muted-foreground">{f.cnpjCpf}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {aberto && busca.trim().length > 0 && filtrados.length === 0 && (
+        <div className="absolute left-0 top-full z-50 mt-0.5 w-full rounded border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
+          Nenhum fornecedor encontrado.
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -84,6 +275,9 @@ export default function NfePage() {
   const emitir       = useEmitirNfe()
   const cancelar     = useCancelarNfe()
   const reprocessar  = useReprocessarNfe()
+
+  const podeEmitir    = useTemPermissao(Perms.FIS_EMITIR_NF)
+  const podeCancelarNf = useTemPermissao(Perms.VEN_CANCELAR_NF)
   const previewXml   = usePreviewXml()
   const importarXml  = useImportarXml()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -93,17 +287,18 @@ export default function NfePage() {
   const [erroCancelar, setErroCancelar]     = useState('')
 
   // XML import state
-  const [modalXml, setModalXml]     = useState(false)
-  const [xmlPreview, setXmlPreview] = useState<ReturnType<typeof usePreviewXml>['data']>(undefined)
-  const [xmlMeta, setXmlMeta]       = useState<{ chaveAcesso: string | null; emitenteCnpj: string; emitenteNome: string } | null>(null)
-  const [mapeamento, setMapeamento] = useState<Record<number, string>>({})
-  const [erroImport, setErroImport] = useState<string[]>([])
-  const [importOk, setImportOk]     = useState<number | null>(null)
+  const [modalXml, setModalXml]           = useState(false)
+  const [xmlPreview, setXmlPreview]       = useState<ReturnType<typeof usePreviewXml>['data']>(undefined)
+  const [xmlMeta, setXmlMeta]             = useState<{ chaveAcesso: string | null; emitenteCnpj: string; emitenteNome: string } | null>(null)
+  const [fornecedorXml, setFornecedorXml] = useState<FornecedorResponse | null>(null)
+  const [mapeamento, setMapeamento]       = useState<Record<number, string>>({})
+  const [erroImport, setErroImport]       = useState<string[]>([])
+  const [importOk, setImportOk]           = useState<number | null>(null)
 
   function handleArquivoXml(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setXmlPreview(undefined); setErroImport([]); setImportOk(null); setMapeamento({})
+    setXmlPreview(undefined); setErroImport([]); setImportOk(null); setMapeamento({}); setFornecedorXml(null)
     previewXml.mutate(file, {
       onSuccess: (data) => {
         setXmlPreview(data)
@@ -124,7 +319,7 @@ export default function NfePage() {
       }))
     if (itens.length === 0) { setErroImport(['Mapeie pelo menos um item antes de importar.']); return }
     importarXml.mutate(
-      { ...xmlMeta, itens },
+      { ...xmlMeta, fornecedorId: fornecedorXml?.id ?? null, itens },
       {
         onSuccess: (resp) => {
           setImportOk(resp.itensImportados)
@@ -221,14 +416,16 @@ export default function NfePage() {
                       {formatarReais(v.valorTotal)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => emitir.mutate(v.vendaId)}
-                        loading={emitir.isPending}
-                      >
-                        <Send className="h-3 w-3" />
-                        Emitir NF-e
-                      </Button>
+                      {podeEmitir && (
+                        <Button
+                          size="sm"
+                          onClick={() => emitir.mutate(v.vendaId)}
+                          loading={emitir.isPending}
+                        >
+                          <Send className="h-3 w-3" />
+                          Emitir NF-e
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -316,8 +513,8 @@ export default function NfePage() {
                           <Printer className="h-3.5 w-3.5" />
                           DANFE
                         </Button>
-                        {/* Cancelar — só para AUTORIZADA */}
-                        {nf.statusSefaz === 'AUTORIZADA' && (
+                        {/* Cancelar — só para AUTORIZADA e com permissão */}
+                        {nf.statusSefaz === 'AUTORIZADA' && podeCancelarNf && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -391,8 +588,29 @@ export default function NfePage() {
                   )}
                 </div>
 
+                {/* Fornecedor */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-foreground">
+                    Fornecedor
+                    <span className="ml-1 font-normal text-muted-foreground">
+                      (vincula contas a pagar — opcional)
+                    </span>
+                  </label>
+                  <FornecedorSelect
+                    value={fornecedorXml}
+                    onChange={setFornecedorXml}
+                    cnpjHint={xmlMeta?.emitenteCnpj}
+                  />
+                  {!fornecedorXml && (
+                    <p className="text-xs text-muted-foreground">
+                      CNPJ do emitente: <span className="font-mono">{xmlMeta?.emitenteCnpj}</span>
+                      {' '}— nenhum fornecedor correspondente encontrado automaticamente.
+                    </p>
+                  )}
+                </div>
+
                 <p className="text-xs font-medium text-muted-foreground">
-                  Informe o ID do produto correspondente no sistema para cada item:
+                  Busque e vincule o produto do sistema para cada item da nota:
                 </p>
 
                 <table className="w-full text-xs border-collapse">
@@ -402,7 +620,7 @@ export default function NfePage() {
                       <th className="border border-border px-2 py-1 text-left text-foreground">Descrição (fornecedor)</th>
                       <th className="border border-border px-2 py-1 text-right text-foreground">Qtd</th>
                       <th className="border border-border px-2 py-1 text-right text-foreground">Vl. Unit.</th>
-                      <th className="border border-border px-2 py-1 text-foreground">Produto (ID sistema)</th>
+                      <th className="border border-border px-2 py-1 text-foreground">Produto (sistema)</th>
                     </tr>
                   </thead>
                   <tbody>

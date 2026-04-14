@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.financeiro.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.financeiro.api.dto.AbrirCaixaRequest
 import br.com.madeireira.modules.financeiro.api.dto.FecharCaixaRequest
 import br.com.madeireira.modules.financeiro.api.dto.RegistrarSangriaRequest
@@ -18,24 +20,19 @@ import java.time.LocalDate
 fun Route.turnoRoutes(service: TurnoService) {
     route("/api/v1/financeiro/turno") {
 
-            // GET /api/v1/financeiro/turno?data=yyyy-MM-dd   (sem data = hoje)
             get {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_FIN, Permissions.VISUALIZAR))) return@get
                 val data = call.request.queryParameters["data"]
                     ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
                     ?: LocalDate.now()
                 val turno = service.buscarOuNulo(data)
-                if (turno == null) {
-                    call.respond(HttpStatusCode.NoContent)
-                } else {
-                    call.respond(HttpStatusCode.OK, turno)
-                }
+                if (turno == null) call.respond(HttpStatusCode.NoContent)
+                else call.respond(HttpStatusCode.OK, turno)
             }
 
-            // POST /api/v1/financeiro/turno/abrir
             post("abrir") {
-                val req = runCatching { call.receive<AbrirCaixaRequest>() }.getOrElse {
-                    AbrirCaixaRequest()
-                }
+                if (!call.requerPermissao(Permissions.CAI_ABRIR_FECHAR)) return@post
+                val req = runCatching { call.receive<AbrirCaixaRequest>() }.getOrElse { AbrirCaixaRequest() }
                 try {
                     call.respond(HttpStatusCode.Created, service.abrir(req))
                 } catch (e: IllegalArgumentException) {
@@ -45,8 +42,8 @@ fun Route.turnoRoutes(service: TurnoService) {
                 }
             }
 
-            // POST /api/v1/financeiro/turno/fechar
             post("fechar") {
+                if (!call.requerPermissao(Permissions.CAI_ABRIR_FECHAR)) return@post
                 val req = try { call.receive<FecharCaixaRequest>() } catch (e: Exception) {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
                     return@post
@@ -60,8 +57,8 @@ fun Route.turnoRoutes(service: TurnoService) {
                 }
             }
 
-            // POST /api/v1/financeiro/turno/reabrir
             post("reabrir") {
+                if (!call.requerPermissao(Permissions.CAI_ABRIR_FECHAR)) return@post
                 try {
                     call.respond(HttpStatusCode.OK, service.reabrir())
                 } catch (e: NoSuchElementException) {
@@ -71,8 +68,8 @@ fun Route.turnoRoutes(service: TurnoService) {
                 }
             }
 
-            // POST /api/v1/financeiro/turno/sangria
             post("sangria") {
+                if (!call.requerPermissao(Permissions.CAI_SANGRIA_SUPRIMENTO)) return@post
                 val req = try { call.receive<RegistrarSangriaRequest>() } catch (e: Exception) {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("Requisição inválida", e.message))
                     return@post

@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.cliente.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.cliente.api.dto.AtualizarClienteRequest
 import br.com.madeireira.modules.cliente.api.dto.CriarClienteRequest
 import br.com.madeireira.modules.cliente.application.ClienteService
@@ -19,14 +21,14 @@ import java.util.UUID
 fun Route.clienteRoutes(service: ClienteService) {
     route("/api/v1/clientes") {
 
-            // GET /api/v1/clientes?ativo=true
             get {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
                 val apenasAtivos = call.request.queryParameters["ativo"]?.lowercase() != "false"
                 call.respond(HttpStatusCode.OK, service.listar(apenasAtivos))
             }
 
-            // GET /api/v1/clientes/:id
             get("{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                     return@get
@@ -38,8 +40,8 @@ fun Route.clienteRoutes(service: ClienteService) {
                 }
             }
 
-            // POST /api/v1/clientes
             post {
+                if (!call.requerPermissao("CAD:CLIENTE:CRIAR")) return@post
                 val req = try {
                     call.receive<CriarClienteRequest>()
                 } catch (e: Exception) {
@@ -47,15 +49,14 @@ fun Route.clienteRoutes(service: ClienteService) {
                     return@post
                 }
                 try {
-                    val cliente = service.criar(req)
-                    call.respond(HttpStatusCode.Created, cliente)
+                    call.respond(HttpStatusCode.Created, service.criar(req))
                 } catch (e: IllegalArgumentException) {
                     call.respond(HttpStatusCode.UnprocessableEntity, ErroResponse("Erro de validação", e.message))
                 }
             }
 
-            // PUT /api/v1/clientes/:id
             put("{id}") {
+                if (!call.requerPermissao("CAD:CLIENTE:EDITAR")) return@put
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                     return@put
@@ -75,8 +76,8 @@ fun Route.clienteRoutes(service: ClienteService) {
                 }
             }
 
-            // DELETE /api/v1/clientes/:id  — soft delete
             delete("{id}") {
+                if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EXCLUIR))) return@delete
                 val id = parseUUID(call.parameters["id"]) ?: run {
                     call.respond(HttpStatusCode.BadRequest, ErroResponse("ID inválido"))
                     return@delete

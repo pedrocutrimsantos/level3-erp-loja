@@ -23,7 +23,7 @@ class NfEmissaoStub : NfEmissaoPort {
         )
     }
 
-    override suspend fun cancelar(vendaId: java.util.UUID, chaveAcesso: String, justificativa: String): NfCancelamentoResult {
+    override suspend fun cancelar(vendaId: java.util.UUID, chaveAcesso: String, justificativa: String, nProt: String): NfCancelamentoResult {
         return NfCancelamentoResult(
             protocolo = "135${System.currentTimeMillis()}",
             status    = StatusNf.CANCELADA,

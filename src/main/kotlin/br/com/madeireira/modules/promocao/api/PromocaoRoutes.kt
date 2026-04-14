@@ -1,5 +1,7 @@
 package br.com.madeireira.modules.promocao.api
 
+import br.com.madeireira.core.security.Permissions
+import br.com.madeireira.core.security.requerPermissao
 import br.com.madeireira.modules.promocao.api.dto.*
 import br.com.madeireira.modules.promocao.application.ItemCalculo
 import br.com.madeireira.modules.promocao.application.PromocaoService
@@ -25,14 +27,17 @@ fun Route.promocaoRoutes(service: PromocaoService) {
     route("/api/v1/promocoes") {
 
         get {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
             call.respond(service.listar().map { it.toResponse() })
         }
 
         get("/ativas") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
             call.respond(service.listarAtivas().map { it.toResponse() })
         }
 
         get("/produto/{produtoId}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@get
             val pid = call.parameters["produtoId"]
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "produtoId inválido"))
@@ -41,6 +46,7 @@ fun Route.promocaoRoutes(service: PromocaoService) {
         }
 
         get("/{id}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.VISUALIZAR))) return@get
             val id = call.parameters["id"]
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: return@get call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "id inválido"))
@@ -49,6 +55,7 @@ fun Route.promocaoRoutes(service: PromocaoService) {
         }
 
         post {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.CRIAR))) return@post
             val req = call.receive<PromocaoRequest>()
             val p = service.criar(
                 nome               = req.nome,
@@ -66,6 +73,7 @@ fun Route.promocaoRoutes(service: PromocaoService) {
         }
 
         put("/{id}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EDITAR))) return@put
             val id = call.parameters["id"]
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: return@put call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "id inválido"))
@@ -89,6 +97,7 @@ fun Route.promocaoRoutes(service: PromocaoService) {
         }
 
         delete("/{id}") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_CAD, Permissions.EXCLUIR))) return@delete
             val id = call.parameters["id"]
                 ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
                 ?: return@delete call.respond(HttpStatusCode.BadRequest, mapOf("erro" to "id inválido"))
@@ -99,6 +108,7 @@ fun Route.promocaoRoutes(service: PromocaoService) {
 
         /** Calcula descontos para um carrinho. */
         post("/calcular") {
+            if (!call.requerPermissao(Permissions.of(Permissions.MOD_VEN, Permissions.VISUALIZAR))) return@post
             val req = call.receive<CalculoRequest>()
             val itens = req.itens.map {
                 ItemCalculo(
